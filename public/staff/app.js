@@ -1,0 +1,336 @@
+// Staff interface client-side logic
+(function () {
+  'use strict';
+
+  // DOM elements
+  var form = document.getElementById('score-form');
+  var submitBtn = document.getElementById('submit-btn');
+  var serverError = document.getElementById('server-error');
+  var playerSelect = document.getElementById('player-select');
+  var scoreInput = document.getElementById('score-input');
+  var refreshBtn = document.getElementById('refresh-btn');
+  var playerCount = document.getElementById('player-count');
+
+  // Confirmation overlay elements
+  var confirmationOverlay = document.getElementById('confirmation-overlay');
+  var confirmPlayerName = document.getElementById('confirm-player-name');
+  var confirmScore = document.getElementById('confirm-score');
+  var confirmBtn = document.getElementById('confirm-btn');
+  var cancelBtn = document.getElementById('cancel-btn');
+
+  // Success toast
+  var successToast = document.getElementById('success-toast');
+
+  // QR code elements
+  var qrImage = document.getElementById('qr-image');
+  var qrFallback = document.getElementById('qr-fallback');
+
+  // State: the pending submission waiting for confirmation
+  var pendingSubmission = null;
+  var toastTimer = null;
+
+  // --- Initialization ---
+
+  loadPlayers();
+  loadQRCode();
+
+  // --- Player list ---
+
+  function loadPlayers() {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = '↻ Loading…';
+
+    fetch('/api/players')
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error('Failed to load players');
+        }
+        return response.json();
+      })
+      .then(function (data) {
+        populatePlayerSelect(data.players || []);
+      })
+      .catch(function () {
+        showServerError('Unable to load player list. Please check your connection.');
+      })
+      .finally(function () {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = '↻ Refresh';
+      });
+  }
+
+  function populatePlayerSelect(players) {
+    // Remember current selection
+    var currentValue = playerSelect.value;
+
+    // Clear existing options except the placeholder
+    while (playerSelect.options.length > 1) {
+      playerSelect.remove(1);
+    }
+
+    // Sort players alphabetically by display name
+    players.sort(function (a, b) {
+      return a.displayName.localeCompare(b.displayName);
+    });
+
+    // Add player options
+    for (var i = 0; i < players.length; i++) {
+      var option = document.createElement('option');
+      option.value = players[i].id;
+      option.textContent = players[i].displayName + ' (' + players[i].favouriteClub + ')';
+      playerSelect.appendChild(option);
+    }
+
+    // Restore previous selection if still available
+    if (currentValue) {
+      playerSelect.value = currentValue;
+      // If the player no longer exists, reset to placeholder
+      if (playerSelect.value !== currentValue) {
+        playerSelect.value = '';
+      }
+    }
+
+    // Update player count
+    playerCount.textContent = players.length + ' player' + (players.length !== 1 ? 's' : '') + ' registered';
+  }
+
+  refreshBtn.addEventListener('click', function () {
+    loadPlayers();
+  });
+
+  // --- QR Code ---
+
+  function loadQRCode() {
+    fetch('/api/qrcode')
+      .then(function (response) {
+        var contentType = response.headers.get('Content-Type') || '';
+        if (contentType.indexOf('image/svg+xml') !== -1) {
+          return response.text().then(function (svg) {
+            // Convert SVG string to a data URL for the img element
+            var encoded = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+            qrImage.src = encoded;
+            qrImage.style.display = 'block';
+            qrFallback.style.display = 'none';
+          });
+        } else {
+          return response.text().then(function (url) {
+            qrFallback.textContent = url;
+            qrFallback.style.display = 'block';
+            qrImage.style.display = 'none';
+          });
+        }
+      })
+      .catch(function () {
+        // Silently fail — QR code is a nice-to-have on the staff page
+      });
+  }
+
+  // --- Validation ---
+
+  function validateForm() {
+    var errors = {};
+
+    if (!playerSelect.value) {
+      errors.playerId = 'Please select a player';
+    }
+
+    var scoreVal = scoreInput.value.trim();
+    if (scoreVal === '') {
+      errors.score = 'Score is required';
+    } else {
+      var num = Number(scoreVal);
+      if (!Number.isInteger(num) || num <= 0) {
+        errors.score = 'Score must be a positive whole number';
+      }
+    }
+
+    return errors;
+  }
+
+  // Clear field errors on input
+  playerSelect.addEventListener('change', function () {
+    clearFieldError('playerId');
+  });
+
+  scoreInput.addEventListener('input', function () {
+    clearFieldError('score');
+  });
+
+  // --- Form submission ---
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    hideServerError();
+
+    var errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      showFieldErrors(errors);
+      return;
+    }
+
+    // Get selected player name for confirmation
+    var selectedOption = playerSelect.options[playerSelect.selectedIndex];
+    var playerName = selectedOption ? selectedOption.textContent : '';
+    var scoreValue = parseInt(scoreInput.value, 10);
+
+    // Store pending submission and show confirmation
+    pendingSubmission = {
+      playerId: playerSelect.value,
+      playerName: playerName,
+      score: scoreValue
+    };
+
+    showConfirmation(playerName, scoreValue);
+  });
+
+  // --- Confirmation overlay ---
+
+  function showConfirmation(playerName, score) {
+    confirmPlayerName.textContent = playerName;
+    confirmScore.textContent = score;
+    confirmationOverlay.classList.add('visible');
+    confirmBtn.focus();
+  }
+
+  function hideConfirmation() {
+    confirmationOverlay.classList.remove('visible');
+    pendingSubmission = null;
+  }
+
+  confirmBtn.addEventListener('click', function () {
+    if (!pendingSubmission) return;
+
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Submitting…';
+
+    var body = {
+      playerId: pendingSubmission.playerId,
+      score: pendingSubmission.score
+    };
+
+    fetch('/api/scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+      .then(function (response) {
+        return response.json().then(function (json) {
+          return { ok: response.ok, status: response.status, data: json };
+        });
+      })
+      .then(function (result) {
+        if (result.ok) {
+          hideConfirmation();
+          showSuccessToast();
+          // Clear score field but keep player list fresh
+          scoreInput.value = '';
+          loadPlayers();
+        } else if (result.status === 400 && result.data.fields) {
+          hideConfirmation();
+          showFieldErrors(result.data.fields);
+        } else if (result.status === 404) {
+          hideConfirmation();
+          showServerError('Player not found. The player list has been refreshed.');
+          loadPlayers();
+        } else {
+          hideConfirmation();
+          showServerError(result.data.error || 'Something went wrong. Please try again.');
+        }
+      })
+      .catch(function () {
+        hideConfirmation();
+        showServerError('Unable to connect to the server. Please check your connection and try again.');
+      })
+      .finally(function () {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Confirm';
+      });
+  });
+
+  cancelBtn.addEventListener('click', function () {
+    // Cancel: return to form with values preserved (do nothing to form fields)
+    hideConfirmation();
+    submitBtn.focus();
+  });
+
+  // Close overlay on Escape key
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && confirmationOverlay.classList.contains('visible')) {
+      hideConfirmation();
+      submitBtn.focus();
+    }
+  });
+
+  // --- Success toast ---
+
+  function showSuccessToast() {
+    if (toastTimer) {
+      clearTimeout(toastTimer);
+    }
+    successToast.classList.remove('fade-out');
+    successToast.classList.add('visible');
+
+    toastTimer = setTimeout(function () {
+      successToast.classList.add('fade-out');
+      setTimeout(function () {
+        successToast.classList.remove('visible');
+        successToast.classList.remove('fade-out');
+      }, 300);
+    }, 2000);
+  }
+
+  // --- Error display helpers ---
+
+  function showFieldErrors(errors) {
+    clearAllFieldErrors();
+    var firstErrorField = null;
+
+    for (var field in errors) {
+      if (errors.hasOwnProperty(field)) {
+        var errorEl = document.getElementById(field + '-error');
+        var inputEl = field === 'playerId' ? playerSelect : document.getElementById(field === 'score' ? 'score-input' : field);
+        if (errorEl) {
+          errorEl.textContent = errors[field];
+          errorEl.classList.add('visible');
+        }
+        if (inputEl && inputEl.classList) {
+          inputEl.classList.add('error');
+        }
+        if (!firstErrorField && inputEl) {
+          firstErrorField = inputEl;
+        }
+      }
+    }
+
+    if (firstErrorField) {
+      firstErrorField.focus();
+    }
+  }
+
+  function clearFieldError(fieldName) {
+    var errorEl = document.getElementById(fieldName + '-error');
+    var inputEl = fieldName === 'playerId' ? playerSelect : document.getElementById(fieldName === 'score' ? 'score-input' : fieldName);
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.classList.remove('visible');
+    }
+    if (inputEl && inputEl.classList) {
+      inputEl.classList.remove('error');
+    }
+  }
+
+  function clearAllFieldErrors() {
+    clearFieldError('playerId');
+    clearFieldError('score');
+  }
+
+  function showServerError(message) {
+    serverError.textContent = message;
+    serverError.classList.add('visible');
+  }
+
+  function hideServerError() {
+    serverError.textContent = '';
+    serverError.classList.remove('visible');
+  }
+})();

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Registration — Event Scoreboard</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f5f7fa;
+      color: #1a1a2e;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      padding: 24px 20px 40px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 0.95rem;
+      color: #555;
+    }
+
+    /* Form styles */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 6px;
+    }
+
+    label .optional-tag {
+      font-weight: 400;
+      color: #888;
+      font-size: 0.8rem;
+    }
+
+    input[type="text"],
+    input[type="email"] {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 1rem;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+      color: #1a1a2e;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus {
+      outline: none;
+      border-color: #4a6cf7;
+    }
+
+    input[type="text"].error,
+    input[type="email"].error {
+      border-color: #e74c3c;
+    }
+
+    .field-hint {
+      font-size: 0.8rem;
+      color: #777;
+      margin-top: 4px;
+    }
+
+    .field-error {
+      font-size: 0.8rem;
+      color: #e74c3c;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .field-error.visible {
+      display: block;
+    }
+
+    /* Consent checkbox group */
+    .consent-group {
+      display: none;
+      margin-bottom: 20px;
+      padding: 12px 14px;
+      background: #eef2ff;
+      border-radius: 8px;
+      border: 1px solid #d0d9ff;
+    }
+
+    .consent-group.visible {
+      display: block;
+    }
+
+    .consent-group label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-weight: 400;
+      font-size: 0.85rem;
+      color: #444;
+      cursor: pointer;
+    }
+
+    .consent-group input[type="checkbox"] {
+      margin-top: 2px;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      accent-color: #4a6cf7;
+    }
+
+    .consent-group .field-error {
+      margin-left: 28px;
+    }
+
+    /* Submit button */
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #fff;
+      background: #4a6cf7;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .btn-submit:hover {
+      background: #3b5de7;
+    }
+
+    .btn-submit:active {
+      background: #2f4fd6;
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Server error banner */
+    .server-error {
+      display: none;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      background: #fdecea;
+      color: #c0392b;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      border: 1px solid #f5c6cb;
+    }
+
+    .server-error.visible {
+      display: block;
+    }
+
+    /* Privacy / data retention notice */
+    .privacy-notice {
+      margin-top: 28px;
+      padding: 16px;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .privacy-notice h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 8px;
+    }
+
+    .privacy-notice ul {
+      margin: 8px 0 0 16px;
+    }
+
+    .privacy-notice li {
+      margin-bottom: 4px;
+    }
+
+    /* Success screen */
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .success-screen.visible {
+      display: block;
+    }
+
+    .success-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+
+    .success-screen h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 8px;
+    }
+
+    .success-screen p {
+      font-size: 1rem;
+      color: #555;
+      margin-bottom: 4px;
+    }
+
+    .success-screen .player-name {
+      font-weight: 600;
+      color: #4a6cf7;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🏒 Player Registration</h1>
+      <p>Sign up to play and compete on the leaderboard</p>
+    </header>
+
+    <!-- Registration form -->
+    <form id="registration-form" novalidate>
+      <div class="server-error" id="server-error" role="alert"></div>
+
+      <div class="form-group">
+        <label for="displayName">Display Name</label>
+        <input type="text" id="displayName" name="displayName" placeholder="Your name" required maxlength="50" autocomplete="name">
+        <div class="field-error" id="displayName-error" role="alert"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="favouriteClub">Favourite Club</label>
+        <input type="text" id="favouriteClub" name="favouriteClub" placeholder="e.g. Manchester Storm" required maxlength="100">
+        <div class="field-error" id="favouriteClub-error" role="alert"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email <span class="optional-tag">(optional)</span></label>
+        <input type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email">
+        <div class="field-hint">So we can contact you if you win a prize. You can participate fully without providing an email.</div>
+        <div class="field-error" id="email-error" role="alert"></div>
+      </div>
+
+      <div class="consent-group" id="consent-group">
+        <label for="emailConsent">
+          <input type="checkbox" id="emailConsent" name="emailConsent">
+          <span>I agree to receive communications about this event and any prizes I may win. My email will only be used for this purpose.</span>
+        </label>
+        <div class="field-error" id="emailConsent-error" role="alert"></div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">Register</button>
+    </form>
+
+    <div class="privacy-notice">
+      <h3>How we use your data</h3>
+      <p>We collect your display name and favourite club to show on the event leaderboard. Your email, if provided, is only used to contact you about prizes.</p>
+      <ul>
+        <li>Your data is stored for the duration of this event only.</li>
+        <li>Email is optional — you can participate fully without it.</li>
+        <li>You can request deletion of your data at any time by speaking to event staff.</li>
+      </ul>
+    </div>
+
+    <!-- Success screen (hidden by default) -->
+    <div class="success-screen" id="success-screen">
+      <div class="success-icon" aria-hidden="true">🎉</div>
+      <h2>You're registered!</h2>
+      <p>Good luck, <span class="player-name" id="success-player-name"></span>!</p>
+      <p>Head to the station and show the staff your name.</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
