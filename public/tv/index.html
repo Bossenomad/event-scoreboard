@@ -57,6 +57,7 @@
     :root {
       --viewport-pad: 16px;
       --tv-scale: 1;
+      --tv-safe-scale: 0.94;
     }
 
     *, *::before, *::after {
@@ -137,6 +138,8 @@
       padding-right: 80px;
       font-size: 100%;
       overflow: hidden;
+      transform: scale(var(--tv-safe-scale));
+      transform-origin: center center;
     }
 
     /* --- Prize pot section --- */
