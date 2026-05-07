@@ -33,6 +33,11 @@ app.use('/staff', express.static(path.join(publicDir, 'staff')));
 // Serve TV display at /tv
 app.use('/tv', express.static(path.join(publicDir, 'tv')));
 
+// Root route -> TV display
+app.get('/', (_req, res) => {
+  res.redirect('/tv');
+});
+
 // Initialize database and service layer
 const db: Database.Database = getDatabase();
 const service = createScoreboardService(db);
