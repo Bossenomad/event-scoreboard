@@ -360,7 +360,7 @@
     serverError.textContent = '';
     serverError.classList.remove('visible');
   }
-})();
+
   playerSelect.addEventListener('change', function () {
     syncSelectedPlayerDetails();
   });
@@ -440,3 +440,4 @@
   exportCsvBtn.addEventListener('click', function () {
     window.location.href = '/api/players/export/csv';
   });
+})();
