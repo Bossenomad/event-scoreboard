@@ -34,6 +34,7 @@
   displayNameInput.addEventListener('input', function () { clearFieldError('displayName'); });
   favouriteClubInput.addEventListener('input', function () { clearFieldError('favouriteClub'); });
   scoreInput.addEventListener('input', function () { clearFieldError('score'); });
+  displayNameInput.addEventListener('input', autofillClubFromName);
   displayNameInput.addEventListener('change', autofillClubFromName);
 
   form.addEventListener('submit', function (e) {
@@ -339,6 +340,17 @@
     var name = (displayNameInput.value || '').trim();
     if (!name) return;
     var club = playerClubByName[name];
+    if (!club) {
+      // Prefix match fallback while typing
+      var lower = name.toLowerCase();
+      for (var i = 0; i < knownPlayers.length; i++) {
+        var candidateName = (knownPlayers[i].displayName || '').trim();
+        if (candidateName.toLowerCase().indexOf(lower) === 0) {
+          club = (knownPlayers[i].favouriteClub || '').trim();
+          if (club) break;
+        }
+      }
+    }
     if (!club) return;
     if ((favouriteClubInput.value || '').trim().length > 0) return;
     favouriteClubInput.value = club;
