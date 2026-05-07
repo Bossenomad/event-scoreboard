@@ -139,21 +139,33 @@ export function getScoresByPlayerId(db: Database.Database, playerId: string): Sc
 export function getLeaderboard(db: Database.Database): LeaderboardEntry[] {
   const rows = db
     .prepare(
-      `SELECT
+      `WITH player_best AS (
+        SELECT
+          s.player_id,
+          MAX(s.score) AS best_score
+        FROM scores s
+        GROUP BY s.player_id
+      ),
+      first_reached AS (
+        SELECT
+          pb.player_id,
+          pb.best_score,
+          MIN(s.created_at) AS first_reached_at
+        FROM player_best pb
+        JOIN scores s
+          ON s.player_id = pb.player_id
+         AND s.score = pb.best_score
+        GROUP BY pb.player_id, pb.best_score
+      )
+      SELECT
         p.id AS player_id,
         p.display_name,
         p.favourite_club,
-        MAX(s.score) AS score,
-        (
-          SELECT MIN(s2.created_at)
-          FROM scores s2
-          WHERE s2.player_id = p.id
-            AND s2.score = MAX(s.score)
-        ) AS first_reached_at
-      FROM scores s
-      JOIN players p ON s.player_id = p.id
-      GROUP BY p.id
-      ORDER BY score DESC, first_reached_at ASC
+        fr.best_score AS score,
+        fr.first_reached_at
+      FROM first_reached fr
+      JOIN players p ON p.id = fr.player_id
+      ORDER BY fr.best_score DESC, fr.first_reached_at ASC
       LIMIT 5`
     )
     .all() as Array<{

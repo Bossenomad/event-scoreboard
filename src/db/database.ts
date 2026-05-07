@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
 
-const DEFAULT_DB_PATH = './data/scoreboard.db';
+const DEFAULT_DB_PATH = process.env.VERCEL ? '/tmp/scoreboard.db' : './data/scoreboard.db';
 
 let db: Database.Database | null = null;
 
