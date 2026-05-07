@@ -30,6 +30,7 @@ function createDatabase(dbPath: string): Database.Database {
       favourite_club TEXT NOT NULL,
       email TEXT,
       email_consent INTEGER DEFAULT 0,
+      gdpr_consent INTEGER DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -43,6 +44,14 @@ function createDatabase(dbPath: string): Database.Database {
 
     CREATE INDEX IF NOT EXISTS idx_scores_player_id ON scores(player_id);
   `);
+
+  const playerColumns = database
+    .prepare(`PRAGMA table_info(players)`)
+    .all() as Array<{ name: string }>;
+  const hasGdprConsent = playerColumns.some((column) => column.name === 'gdpr_consent');
+  if (!hasGdprConsent) {
+    database.exec(`ALTER TABLE players ADD COLUMN gdpr_consent INTEGER DEFAULT 0`);
+  }
 
   return database;
 }

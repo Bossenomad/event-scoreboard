@@ -6,14 +6,27 @@ import type { Player, ScoreRecord, LeaderboardEntry } from '../types.js';
 
 export function insertPlayer(
   db: Database.Database,
-  data: { displayName: string; favouriteClub: string; email?: string; emailConsent?: boolean }
+  data: {
+    displayName: string;
+    favouriteClub: string;
+    email?: string;
+    emailConsent?: boolean;
+    gdprConsent?: boolean;
+  }
 ): Player {
   const id = uuidv4();
   const stmt = db.prepare(`
-    INSERT INTO players (id, display_name, favourite_club, email, email_consent, created_at)
-    VALUES (?, ?, ?, ?, ?, datetime('now'))
+    INSERT INTO players (id, display_name, favourite_club, email, email_consent, gdpr_consent, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
   `);
-  stmt.run(id, data.displayName, data.favouriteClub, data.email ?? null, data.emailConsent ? 1 : 0);
+  stmt.run(
+    id,
+    data.displayName,
+    data.favouriteClub,
+    data.email ?? null,
+    data.emailConsent ? 1 : 0,
+    data.gdprConsent ? 1 : 0
+  );
 
   return getPlayerById(db, id)!;
 }
@@ -25,6 +38,7 @@ export function getAllPlayers(db: Database.Database): Player[] {
     favourite_club: string;
     email: string | null;
     email_consent: number;
+    gdpr_consent: number;
     created_at: string;
   }>;
 
@@ -39,6 +53,7 @@ export function getPlayerById(db: Database.Database, id: string): Player | undef
         favourite_club: string;
         email: string | null;
         email_consent: number;
+        gdpr_consent: number;
         created_at: string;
       }
     | undefined;
@@ -49,6 +64,28 @@ export function getPlayerById(db: Database.Database, id: string): Player | undef
 export function deletePlayer(db: Database.Database, id: string): boolean {
   const result = db.prepare('DELETE FROM players WHERE id = ?').run(id);
   return result.changes > 0;
+}
+
+export function updatePlayer(
+  db: Database.Database,
+  id: string,
+  data: { displayName: string; favouriteClub: string }
+): Player | undefined {
+  const result = db
+    .prepare(
+      `
+      UPDATE players
+      SET display_name = ?, favourite_club = ?
+      WHERE id = ?
+    `
+    )
+    .run(data.displayName, data.favouriteClub, id);
+
+  if (result.changes === 0) {
+    return undefined;
+  }
+
+  return getPlayerById(db, id);
 }
 
 // --- Score operations ---
@@ -106,11 +143,17 @@ export function getLeaderboard(db: Database.Database): LeaderboardEntry[] {
         p.id AS player_id,
         p.display_name,
         p.favourite_club,
-        MAX(s.score) AS score
+        MAX(s.score) AS score,
+        (
+          SELECT MIN(s2.created_at)
+          FROM scores s2
+          WHERE s2.player_id = p.id
+            AND s2.score = MAX(s.score)
+        ) AS first_reached_at
       FROM scores s
       JOIN players p ON s.player_id = p.id
       GROUP BY p.id
-      ORDER BY score DESC
+      ORDER BY score DESC, first_reached_at ASC
       LIMIT 5`
     )
     .all() as Array<{
@@ -118,6 +161,7 @@ export function getLeaderboard(db: Database.Database): LeaderboardEntry[] {
     display_name: string;
     favourite_club: string;
     score: number;
+    first_reached_at: string;
   }>;
 
   return rows.map((row, index) => ({
@@ -136,6 +180,67 @@ export function getPrizePot(db: Database.Database): number {
   return row.prize_pot;
 }
 
+export function getLatestResult(
+  db: Database.Database
+): { playerId: string; displayName: string; score: number; createdAt: string } | null {
+  const row = db
+    .prepare(
+      `SELECT
+        s.player_id,
+        p.display_name,
+        s.score,
+        s.created_at
+      FROM scores s
+      JOIN players p ON p.id = s.player_id
+      ORDER BY s.created_at DESC
+      LIMIT 1`
+    )
+    .get() as
+    | {
+        player_id: string;
+        display_name: string;
+        score: number;
+        created_at: string;
+      }
+    | undefined;
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    playerId: row.player_id,
+    displayName: row.display_name,
+    score: row.score,
+    createdAt: row.created_at,
+  };
+}
+
+export function getScoresExportRows(db: Database.Database): Array<{
+  createdAt: string;
+  displayName: string;
+  favouriteClub: string;
+  score: number;
+}> {
+  return db
+    .prepare(
+      `SELECT
+        s.created_at AS createdAt,
+        p.display_name AS displayName,
+        p.favourite_club AS favouriteClub,
+        s.score AS score
+      FROM scores s
+      JOIN players p ON p.id = s.player_id
+      ORDER BY s.created_at ASC`
+    )
+    .all() as Array<{
+    createdAt: string;
+    displayName: string;
+    favouriteClub: string;
+    score: number;
+  }>;
+}
+
 // --- Helpers ---
 
 function mapRowToPlayer(row: {
@@ -144,6 +249,7 @@ function mapRowToPlayer(row: {
   favourite_club: string;
   email: string | null;
   email_consent: number;
+  gdpr_consent: number;
   created_at: string;
 }): Player {
   const player: Player = {
@@ -151,6 +257,7 @@ function mapRowToPlayer(row: {
     displayName: row.display_name,
     favouriteClub: row.favourite_club,
     emailConsent: row.email_consent === 1,
+    gdprConsent: row.gdpr_consent === 1,
     createdAt: row.created_at,
   };
   if (row.email) {

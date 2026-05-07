@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Player Registration — Event Scoreboard</title>
+  <title>Registrering</title>
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -141,6 +141,19 @@
       margin-left: 28px;
     }
 
+    .gdpr-group {
+      display: block;
+      margin-bottom: 20px;
+      padding: 12px 14px;
+      background: #eef7f1;
+      border-radius: 8px;
+      border: 1px solid #c8e8d4;
+    }
+
+    .gdpr-group .field-error {
+      margin-left: 28px;
+    }
+
     /* Submit button */
     .btn-submit {
       width: 100%;
@@ -251,8 +264,8 @@
 <body>
   <div class="container">
     <header>
-      <h1>🏒 Player Registration</h1>
-      <p>Sign up to play and compete on the leaderboard</p>
+      <h1>🏒 Spelarregistrering</h1>
+      <p>Registrera dig för att delta</p>
     </header>
 
     <!-- Registration form -->
@@ -260,51 +273,59 @@
       <div class="server-error" id="server-error" role="alert"></div>
 
       <div class="form-group">
-        <label for="displayName">Display Name</label>
-        <input type="text" id="displayName" name="displayName" placeholder="Your name" required maxlength="50" autocomplete="name">
+        <label for="displayName">För- och efternamn</label>
+        <input type="text" id="displayName" name="displayName" placeholder="Förnamn Efternamn" required maxlength="50" autocomplete="name">
         <div class="field-error" id="displayName-error" role="alert"></div>
       </div>
 
       <div class="form-group">
-        <label for="favouriteClub">Favourite Club</label>
-        <input type="text" id="favouriteClub" name="favouriteClub" placeholder="e.g. Manchester Storm" required maxlength="100">
+        <label for="favouriteClub">Favoritlag</label>
+        <input type="text" id="favouriteClub" name="favouriteClub" placeholder="t.ex. Frölunda HC" required maxlength="100">
         <div class="field-error" id="favouriteClub-error" role="alert"></div>
       </div>
 
       <div class="form-group">
-        <label for="email">Email <span class="optional-tag">(optional)</span></label>
+        <label for="email">E-post <span class="optional-tag">(valfritt)</span></label>
         <input type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email">
-        <div class="field-hint">So we can contact you if you win a prize. You can participate fully without providing an email.</div>
+        <div class="field-hint">Vi kan kontakta dig om du vinner ett pris. Du kan delta utan att ange e-post.</div>
         <div class="field-error" id="email-error" role="alert"></div>
       </div>
 
       <div class="consent-group" id="consent-group">
         <label for="emailConsent">
           <input type="checkbox" id="emailConsent" name="emailConsent">
-          <span>I agree to receive communications about this event and any prizes I may win. My email will only be used for this purpose.</span>
+          <span>Jag godkänner att bli kontaktad om detta event och eventuella priser jag vinner. Min e-post används endast för detta.</span>
         </label>
         <div class="field-error" id="emailConsent-error" role="alert"></div>
       </div>
 
-      <button type="submit" class="btn-submit" id="submit-btn">Register</button>
+      <div class="gdpr-group" id="gdpr-group">
+        <label for="gdprConsent">
+          <input type="checkbox" id="gdprConsent" name="gdprConsent" required>
+          <span>Jag godkänner hantering av mina personuppgifter enligt GDPR för detta event.</span>
+        </label>
+        <div class="field-error" id="gdprConsent-error" role="alert"></div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">Registrera</button>
     </form>
 
     <div class="privacy-notice">
-      <h3>How we use your data</h3>
-      <p>We collect your display name and favourite club to show on the event leaderboard. Your email, if provided, is only used to contact you about prizes.</p>
+      <h3>Så använder vi dina uppgifter</h3>
+      <p>Vi samlar in namn och favoritlag för att visa topplistan under eventet. Om du anger e-post används den bara för kontakt kring priser.</p>
       <ul>
-        <li>Your data is stored for the duration of this event only.</li>
-        <li>Email is optional — you can participate fully without it.</li>
-        <li>You can request deletion of your data at any time by speaking to event staff.</li>
+        <li>Dina uppgifter sparas endast under eventets gång.</li>
+        <li>E-post är valfritt och påverkar inte ditt deltagande.</li>
+        <li>Du kan när som helst be personalen att radera dina uppgifter.</li>
       </ul>
     </div>
 
     <!-- Success screen (hidden by default) -->
     <div class="success-screen" id="success-screen">
       <div class="success-icon" aria-hidden="true">🎉</div>
-      <h2>You're registered!</h2>
-      <p>Good luck, <span class="player-name" id="success-player-name"></span>!</p>
-      <p>Head to the station and show the staff your name.</p>
+      <h2>Du är registrerad!</h2>
+      <p>Lycka till, <span class="player-name" id="success-player-name"></span>!</p>
+      <p>Gå till stationen och visa ditt namn för personalen.</p>
     </div>
   </div>
 

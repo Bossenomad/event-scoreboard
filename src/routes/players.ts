@@ -22,13 +22,14 @@ export function createPlayersRouter(
    */
   router.post('/', (req: Request, res: Response) => {
     try {
-      const { displayName, favouriteClub, email, emailConsent } = req.body;
+      const { displayName, favouriteClub, email, emailConsent, gdprConsent } = req.body;
 
       const player = service.registerPlayer({
         displayName,
         favouriteClub,
         email,
         emailConsent,
+        gdprConsent,
       });
 
       res.status(201).json(player);
@@ -80,6 +81,47 @@ export function createPlayersRouter(
     } else {
       res.status(404).json({ error: 'Player not found' });
     }
+  });
+
+  router.put('/:id', (req: Request, res: Response) => {
+    try {
+      const id = req.params.id as string;
+      const { displayName, favouriteClub } = req.body;
+
+      const player = service.updatePlayer(id, {
+        displayName,
+        favouriteClub,
+      });
+
+      if (broadcastFn) {
+        broadcastFn();
+      }
+
+      res.status(200).json(player);
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        res.status(400).json({
+          error: 'Validation failed',
+          fields: err.errors,
+        });
+        return;
+      }
+      if (err instanceof PlayerNotFoundError) {
+        res.status(404).json({ error: 'Player not found' });
+        return;
+      }
+      throw err;
+    }
+  });
+
+  router.get('/export/csv', (_req: Request, res: Response) => {
+    const csv = service.getScoresCsv();
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="hockey-scoreboard-export-${new Date().toISOString().slice(0, 10)}.csv"`
+    );
+    res.status(200).send(csv);
   });
 
   return router;

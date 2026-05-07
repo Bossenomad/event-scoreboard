@@ -1,10 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1920">
-  <title>Live Scoreboard — Event Scoreboard</title>
+  <title>Topplistan</title>
   <style>
+    @font-face {
+      font-family: 'SvenskaSpelPlan';
+      src: url('./fonts/SvenskaSpelPlan-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'SvenskaSpelPlan';
+      src: url('./fonts/SvenskaSpelPlan-Medium.ttf') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'SvenskaSpelPlan';
+      src: url('./fonts/SvenskaSpelPlan-Bold.ttf') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'SvenskaSpelPlan';
+      src: url('./fonts/SvenskaSpelPlan-RegularItalic.ttf') format('truetype');
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    @font-face {
+      font-family: 'SvenskaSpelPlan';
+      src: url('./fonts/SvenskaSpelPlan-MediumItalic.ttf') format('truetype');
+      font-weight: 500;
+      font-style: italic;
+    }
+
+    @font-face {
+      font-family: 'SvenskaSpelPlan';
+      src: url('./fonts/SvenskaSpelPlan-BoldItalic.ttf') format('truetype');
+      font-weight: 700;
+      font-style: italic;
+    }
+
+    @font-face {
+      font-family: 'SvenskaSpelArena';
+      src: url('./fonts/SvenskaSpelArena-Bold.ttf') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    :root {
+      --viewport-pad: 16px;
+      --tv-scale: 1;
+    }
+
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -40,37 +94,49 @@
     }
 
     body {
-      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, sans-serif;
-      background: #0a0a1a;
+      background: #111;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: var(--viewport-pad);
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .tv-preview {
+      width: calc(1920px * var(--tv-scale));
+      height: calc(1080px * var(--tv-scale));
+      flex: 0 0 auto;
+      position: relative;
+    }
+
+    .tv-canvas {
+      font-family: 'SvenskaSpelPlan', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #A20020;
       color: #ffffff;
       width: 1920px;
       height: 1080px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: scale(var(--tv-scale));
+      transform-origin: top left;
       animation: fadeIn 0.8s ease-out;
     }
 
-    /* --- Top branding bar --- */
-    .branding {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 60px 0;
-      flex-shrink: 0;
-    }
-
-    .branding h1 {
-      font-size: 2.2rem;
-      font-weight: 700;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: #8899bb;
-    }
-
-    .branding .emoji {
-      font-size: 2.4rem;
-      margin-right: 16px;
+    .tv-stage {
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      padding-top: 4%;
+      padding-left: 80px;
+      padding-right: 80px;
+      font-size: 100%;
+      overflow: hidden;
     }
 
     /* --- Prize pot section --- */
@@ -80,27 +146,37 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 60px 36px;
+      padding: 20px 48px 16px;
     }
 
     .prize-label {
-      font-size: 2.4rem;
-      font-weight: 600;
+      font-size: 1.5rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 6px;
-      color: #66ccff;
+      color: #ffffff;
       margin-bottom: 12px;
     }
 
     .prize-value {
-      font-size: 10rem;
-      font-weight: 800;
+      font-size: 7.2rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
+      font-weight: 700;
       line-height: 1;
       color: #ffffff;
-      text-shadow: 0 0 20px rgba(0, 200, 255, 0.4), 0 0 40px rgba(0, 200, 255, 0.2);
+      text-shadow: none;
       font-variant-numeric: tabular-nums;
       letter-spacing: 4px;
       transition: color 0.3s;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+
+    .prize-currency {
+      font-size: 0.72em;
+      line-height: 1;
     }
 
     .prize-value.animating {
@@ -108,11 +184,15 @@
     }
 
     .prize-subtitle {
-      font-size: 1.4rem;
-      color: #556688;
+      font-size: 1.45rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
+      font-weight: 700;
+      color: #ffffff;
       margin-top: 8px;
+      margin-bottom: 28px;
       letter-spacing: 2px;
       text-transform: uppercase;
+      opacity: 0.95;
     }
 
     /* --- Divider --- */
@@ -121,76 +201,85 @@
       max-width: 1400px;
       height: 2px;
       margin: 0 auto;
-      background: linear-gradient(90deg, transparent, #334466 20%, #66ccff 50%, #334466 80%, transparent);
+      background: rgba(255, 255, 255, 0.35);
       flex-shrink: 0;
     }
 
     /* --- Leaderboard section --- */
     .leaderboard-section {
-      flex: 1;
+      flex: 0 0 auto;
       display: flex;
       flex-direction: column;
-      padding: 36px 120px 48px;
+      padding: 20px 0 18px 0;
       min-height: 0;
     }
 
     .leaderboard-title {
-      font-size: 2rem;
+      font-size: 1.9rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 4px;
-      color: #8899bb;
+      color: #ffffff;
       text-align: center;
       margin-bottom: 24px;
       flex-shrink: 0;
     }
 
     .leaderboard-table {
-      width: 100%;
-      flex: 1;
+      width: calc(100% - 18px);
+      padding-right: 18px;
+      margin: 0 auto;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     /* Table header */
     .lb-header {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 0.35fr) minmax(0, 1.45fr) minmax(0, 1.45fr) minmax(0, 0.75fr);
       align-items: center;
-      padding: 12px 32px;
-      font-size: 1.1rem;
-      font-weight: 600;
+      padding: 10px 14px;
+      font-size: 1rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 3px;
-      color: #556688;
-      border-bottom: 1px solid #1a2040;
+      letter-spacing: 1px;
+      color: #ffffff;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.45);
       flex-shrink: 0;
+      width: 100%;
+      overflow: hidden;
     }
 
-    .lb-header .col-rank  { width: 100px; text-align: center; }
-    .lb-header .col-name  { flex: 1; }
-    .lb-header .col-club  { flex: 1; }
-    .lb-header .col-score { width: 200px; text-align: right; }
+    .lb-header .col-rank  { text-align: center; min-width: 0; }
+    .lb-header .col-name  { min-width: 0; }
+    .lb-header .col-club  { min-width: 0; }
+    .lb-header .col-score { text-align: right; min-width: 0; }
 
     /* Table body */
     .lb-body {
-      flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      gap: 6px;
+      gap: 4px;
       padding-top: 8px;
     }
 
     /* Leaderboard row */
     .lb-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 0.35fr) minmax(0, 1.45fr) minmax(0, 1.45fr) minmax(0, 0.75fr);
       align-items: center;
-      padding: 18px 32px;
+      padding: 12px 14px;
       border-radius: 12px;
-      background: linear-gradient(135deg, rgba(20, 25, 50, 0.8), rgba(15, 20, 40, 0.6));
-      border: 1px solid rgba(100, 140, 200, 0.1);
+      background: #62001D;
+      border: 1px solid rgba(255, 255, 255, 0.18);
       transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1),
                   opacity 0.6s ease;
+      width: 100%;
+      overflow: hidden;
     }
 
     .lb-row.slide-in {
@@ -199,66 +288,63 @@
 
     /* Rank 1 highlight */
     .lb-row.rank-1 {
-      background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(255, 180, 0, 0.06));
-      border-color: rgba(255, 215, 0, 0.25);
-    }
-
-    /* Rank 2 highlight */
-    .lb-row.rank-2 {
-      background: linear-gradient(135deg, rgba(192, 192, 192, 0.1), rgba(160, 160, 180, 0.05));
-      border-color: rgba(192, 192, 192, 0.2);
-    }
-
-    /* Rank 3 highlight */
-    .lb-row.rank-3 {
-      background: linear-gradient(135deg, rgba(205, 127, 50, 0.1), rgba(180, 110, 40, 0.05));
-      border-color: rgba(205, 127, 50, 0.2);
+      background: #ED0000;
+      border-color: rgba(255, 255, 255, 0.4);
     }
 
     .col-rank {
-      width: 100px;
       text-align: center;
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: #66ccff;
+      font-size: 1.55rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
+      font-weight: 700;
+      color: #ffffff;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .rank-1 .col-rank { color: #ffd700; }
-    .rank-2 .col-rank { color: #c0c0c0; }
-    .rank-3 .col-rank { color: #cd7f32; }
+    .rank-1 .col-rank { color: #ffffff; }
 
     .col-name {
-      flex: 1;
-      font-size: 2rem;
+      min-width: 0;
+      font-size: 1.25rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
       font-weight: 700;
       color: #ffffff;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      padding-right: 20px;
+      padding-right: 10px;
     }
 
     .col-club {
-      flex: 1;
-      font-size: 1.5rem;
-      font-weight: 400;
-      color: #7788aa;
+      min-width: 0;
+      font-size: 1.1rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
+      font-weight: 700;
+      color: #ffffff;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      padding-right: 20px;
+      padding-right: 10px;
     }
 
     .col-score {
-      width: 200px;
       text-align: right;
-      font-size: 2.4rem;
-      font-weight: 800;
-      color: #66ccff;
+      font-size: 1.45rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
+      font-weight: 700;
+      color: #ffffff;
       font-variant-numeric: tabular-nums;
+      padding-right: 0;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .rank-1 .col-score { color: #ffd700; }
+    .rank-1 .col-score { color: #ffffff; }
 
     /* Empty state */
     .lb-empty {
@@ -267,20 +353,80 @@
       align-items: center;
       justify-content: center;
       font-size: 1.8rem;
-      color: #334466;
+      color: rgba(255, 255, 255, 0.75);
       letter-spacing: 2px;
+    }
+
+    .latest-section {
+      margin: 8px 0 0 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .latest-title {
+      font-size: 1.5rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: #ffffff;
+      margin-bottom: 14px;
+    }
+
+    .latest-table {
+      width: calc(100% - 18px);
+      padding-right: 18px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .latest-row {
+      display: grid;
+      grid-template-columns: minmax(0, 0.35fr) minmax(0, 1.45fr) minmax(0, 1.45fr) minmax(0, 0.75fr);
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #62001D;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .latest-row .col-name,
+    .latest-row .col-club,
+    .latest-row .col-score {
+      color: #fff;
+    }
+
+    .latest-player,
+    .latest-club {
+      font-size: 1.25rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .latest-score {
+      font-size: 1.25rem;
+      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
+      color: #ffffff;
+      font-weight: 700;
     }
 
     /* Connection status indicator */
     .connection-status {
-      position: fixed;
+      position: absolute;
       bottom: 16px;
       right: 24px;
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 0.85rem;
-      color: #334466;
+      color: rgba(255, 255, 255, 0.8);
       opacity: 0.6;
     }
 
@@ -302,30 +448,48 @@
   </style>
 </head>
 <body>
-  <div class="branding">
-    <span class="emoji" aria-hidden="true">🏒</span>
-    <h1>Live Scoreboard</h1>
-  </div>
-
+  <div class="tv-preview">
+  <main class="tv-canvas">
+  <div class="tv-stage">
   <section class="prize-section" aria-label="Prize pot">
-    <div class="prize-label">Total Prize Pot</div>
-    <div class="prize-value" id="prize-value" aria-live="polite">0</div>
-    <div class="prize-subtitle">Points scored across all players</div>
+    <div class="prize-label">Tillsammans har vi samlat in</div>
+    <div class="prize-value" aria-live="polite">
+      <span id="prize-value">0</span>
+      <span class="prize-currency">kr</span>
+    </div>
+    <div class="prize-subtitle">till vinnarens favoritförening</div>
   </section>
 
   <div class="divider" aria-hidden="true"></div>
 
   <section class="leaderboard-section" aria-label="Leaderboard">
-    <div class="leaderboard-title">🏆 Top 5 Leaderboard</div>
+    <div class="leaderboard-title">Topplistan</div>
     <div class="leaderboard-table" role="table" aria-label="Top 5 players">
       <div class="lb-header" role="row">
-        <span class="col-rank" role="columnheader">Rank</span>
-        <span class="col-name" role="columnheader">Player</span>
-        <span class="col-club" role="columnheader">Club</span>
-        <span class="col-score" role="columnheader">Score</span>
+        <span class="col-rank" role="columnheader"></span>
+        <span class="col-name" role="columnheader">Namn</span>
+        <span class="col-club" role="columnheader">Lag</span>
+        <span class="col-score" role="columnheader">Poäng</span>
       </div>
       <div class="lb-body" id="leaderboard-body" role="rowgroup">
-        <div class="lb-empty" id="leaderboard-empty">Waiting for scores…</div>
+        <div class="lb-empty" id="leaderboard-empty">Väntar på resultat…</div>
+      </div>
+    </div>
+  </section>
+  <section class="latest-section" aria-label="Senaste resultat">
+    <div class="latest-title">Senaste spelare</div>
+    <div class="latest-table" role="table" aria-label="Senaste spelare">
+      <div class="lb-header" role="row">
+        <span class="col-rank" role="columnheader"></span>
+        <span class="col-name" role="columnheader">Namn</span>
+        <span class="col-club" role="columnheader">Lag</span>
+        <span class="col-score" role="columnheader">Poäng</span>
+      </div>
+      <div class="latest-row" role="row">
+        <span class="col-rank" role="cell"></span>
+        <span class="col-name latest-player" id="latest-player">-</span>
+        <span class="col-club latest-club" id="latest-club">-</span>
+        <span class="col-score latest-score" id="latest-score">0</span>
       </div>
     </div>
   </section>
@@ -334,7 +498,10 @@
     <span class="status-dot" id="status-dot"></span>
     <span id="status-text">Connected</span>
   </div>
+  </div>
+  </main>
+  </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20260506-2"></script>
 </body>
 </html>

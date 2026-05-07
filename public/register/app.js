@@ -13,6 +13,7 @@
   var favouriteClubInput = document.getElementById('favouriteClub');
   var emailInput = document.getElementById('email');
   var emailConsentInput = document.getElementById('emailConsent');
+  var gdprConsentInput = document.getElementById('gdprConsent');
   var consentGroup = document.getElementById('consent-group');
 
   var EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,6 +43,9 @@
   emailConsentInput.addEventListener('change', function () {
     clearFieldError('emailConsent');
   });
+  gdprConsentInput.addEventListener('change', function () {
+    clearFieldError('gdprConsent');
+  });
 
   // Form submission
   form.addEventListener('submit', function (e) {
@@ -64,7 +68,8 @@
       displayName: displayNameInput.value,
       favouriteClub: favouriteClubInput.value,
       email: emailInput.value.trim(),
-      emailConsent: emailConsentInput.checked
+      emailConsent: emailConsentInput.checked,
+      gdprConsent: gdprConsentInput.checked
     };
   }
 
@@ -78,30 +83,36 @@
     // displayName: required, 1-50 chars, trimmed
     var trimmedName = (data.displayName || '').trim();
     if (trimmedName.length === 0) {
-      errors.displayName = 'Display name is required';
+      errors.displayName = 'Namn krävs';
+    } else if (trimmedName.split(/\s+/).length < 2) {
+      errors.displayName = 'Ange förnamn och efternamn';
     } else if (trimmedName.length > 50) {
-      errors.displayName = 'Display name must be 50 characters or fewer';
+      errors.displayName = 'Namn får vara max 50 tecken';
     }
 
     // favouriteClub: required, 1-100 chars, trimmed
     var trimmedClub = (data.favouriteClub || '').trim();
     if (trimmedClub.length === 0) {
-      errors.favouriteClub = 'Favourite club is required';
+      errors.favouriteClub = 'Favoritlag krävs';
     } else if (trimmedClub.length > 100) {
-      errors.favouriteClub = 'Favourite club must be 100 characters or fewer';
+      errors.favouriteClub = 'Favoritlag får vara max 100 tecken';
     }
 
     // email: optional; if provided, must match email regex
     var hasEmail = data.email && data.email.length > 0;
     if (hasEmail) {
       if (!EMAIL_REGEX.test(data.email)) {
-        errors.email = 'Email must be a valid email address';
+        errors.email = 'Ogiltig e-postadress';
       }
     }
 
     // emailConsent: required and true if email is provided
     if (hasEmail && !data.emailConsent) {
-      errors.emailConsent = 'Consent is required when providing an email address';
+      errors.emailConsent = 'Samtycke krävs när e-post anges';
+    }
+
+    if (!data.gdprConsent) {
+      errors.gdprConsent = 'Du måste godkänna GDPR-hantering';
     }
 
     return errors;
@@ -109,7 +120,7 @@
 
   function submitRegistration(data) {
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Registering…';
+    submitBtn.textContent = 'Registrerar…';
 
     // Build request body — only include email/consent if email is provided
     var body = {
@@ -121,6 +132,7 @@
       body.email = data.email;
       body.emailConsent = data.emailConsent;
     }
+    body.gdprConsent = data.gdprConsent;
 
     fetch('/api/players', {
       method: 'POST',
@@ -139,12 +151,12 @@
           showFieldErrors(result.data.fields);
           resetSubmitButton();
         } else {
-          showServerError(result.data.error || 'Something went wrong. Please try again.');
+          showServerError(result.data.error || 'Något gick fel. Försök igen.');
           resetSubmitButton();
         }
       })
       .catch(function () {
-        showServerError('Unable to connect to the server. Please check your connection and try again.');
+        showServerError('Kunde inte ansluta till servern. Kontrollera anslutningen och försök igen.');
         resetSubmitButton();
       });
   }
@@ -199,7 +211,7 @@
   }
 
   function clearAllFieldErrors() {
-    var fields = ['displayName', 'favouriteClub', 'email', 'emailConsent'];
+    var fields = ['displayName', 'favouriteClub', 'email', 'emailConsent', 'gdprConsent'];
     for (var i = 0; i < fields.length; i++) {
       clearFieldError(fields[i]);
     }
@@ -217,6 +229,6 @@
 
   function resetSubmitButton() {
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Register';
+    submitBtn.textContent = 'Registrera';
   }
 })();

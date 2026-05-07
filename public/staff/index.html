@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Staff Interface — Event Scoreboard</title>
+  <title>Admin</title>
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -374,8 +374,8 @@
 <body>
   <div class="container">
     <header>
-      <h1>🏒 Staff Score Entry</h1>
-      <p>Select a player and enter their score</p>
+      <h1>🏒 Admin: Resultat</h1>
+      <p>Lägg till resultat och redigera spelare</p>
     </header>
 
     <div class="main-layout">
@@ -385,31 +385,46 @@
 
           <div class="form-group">
             <div class="player-label-row">
-              <label for="player-select">Player</label>
-              <button type="button" class="btn-refresh" id="refresh-btn" aria-label="Refresh player list">↻ Refresh</button>
+              <label for="player-select">Spelare</label>
+              <button type="button" class="btn-refresh" id="refresh-btn" aria-label="Uppdatera spelarlista">↻ Uppdatera</button>
             </div>
             <select id="player-select" name="playerId" required>
-              <option value="">— Select a player —</option>
+              <option value="">— Välj spelare —</option>
             </select>
             <div class="field-error" id="playerId-error" role="alert"></div>
             <div class="player-count" id="player-count"></div>
           </div>
 
           <div class="form-group">
-            <label for="score-input">Score</label>
-            <input type="number" id="score-input" name="score" placeholder="Enter score" min="1" step="1" required inputmode="numeric">
+            <label for="score-input">Poäng</label>
+            <input type="number" id="score-input" name="score" placeholder="Ange poäng" min="1" step="1" required inputmode="numeric">
             <div class="field-error" id="score-error" role="alert"></div>
           </div>
 
-          <button type="submit" class="btn-submit" id="submit-btn">Submit Score</button>
+          <button type="submit" class="btn-submit" id="submit-btn">Spara resultat</button>
+
+          <div class="form-group" style="margin-top:24px; border-top:1px solid #ddd; padding-top:18px;">
+            <label for="edit-displayName">Redigera namn</label>
+            <input type="text" id="edit-displayName" placeholder="Förnamn Efternamn" maxlength="50">
+            <div class="field-error" id="edit-displayName-error" role="alert"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-favouriteClub">Redigera favoritlag</label>
+            <input type="text" id="edit-favouriteClub" placeholder="Lag" maxlength="100">
+            <div class="field-error" id="edit-favouriteClub-error" role="alert"></div>
+          </div>
+
+          <button type="button" class="btn-submit" id="save-player-btn" style="background:#0f7c54;">Spara spelarinfo</button>
+          <button type="button" class="btn-submit" id="export-csv-btn" style="margin-top:12px; background:#334466;">Exportera CSV</button>
         </form>
       </div>
 
       <div class="qr-column">
-        <h3>Player Registration</h3>
+        <h3>Spelarregistrering</h3>
         <img id="qr-image" src="" alt="QR code for player registration" style="display:none;">
         <div id="qr-fallback" class="qr-fallback" style="display:none;"></div>
-        <p style="font-size:0.75rem; color:#888; margin-top:8px;">Show this to players to register</p>
+        <p style="font-size:0.75rem; color:#888; margin-top:8px;">Visa för spelare för registrering</p>
       </div>
     </div>
   </div>
@@ -417,26 +432,26 @@
   <!-- Confirmation overlay -->
   <div class="confirmation-overlay" id="confirmation-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-heading">
     <div class="confirmation-card">
-      <h2 id="confirm-heading">Confirm Score Submission</h2>
+      <h2 id="confirm-heading">Bekräfta resultat</h2>
       <div class="confirmation-details">
         <div class="detail-row">
-          <span class="detail-label">Player</span>
+          <span class="detail-label">Spelare</span>
           <span class="detail-value" id="confirm-player-name"></span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Score</span>
+          <span class="detail-label">Poäng</span>
           <span class="detail-value" id="confirm-score"></span>
         </div>
       </div>
       <div class="confirmation-buttons">
-        <button type="button" class="btn-cancel" id="cancel-btn">Cancel</button>
-        <button type="button" class="btn-confirm" id="confirm-btn">Confirm</button>
+        <button type="button" class="btn-cancel" id="cancel-btn">Avbryt</button>
+        <button type="button" class="btn-confirm" id="confirm-btn">Bekräfta</button>
       </div>
     </div>
   </div>
 
   <!-- Success toast -->
-  <div class="success-toast" id="success-toast" role="status" aria-live="polite">✓ Score submitted!</div>
+  <div class="success-toast" id="success-toast" role="status" aria-live="polite">✓ Sparat!</div>
 
   <script src="app.js"></script>
 </body>

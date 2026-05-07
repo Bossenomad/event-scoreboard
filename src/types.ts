@@ -4,6 +4,7 @@ export interface Player {
   favouriteClub: string;
   email?: string;
   emailConsent: boolean;
+  gdprConsent: boolean;
   createdAt: string;
 }
 
@@ -12,6 +13,7 @@ export interface PlayerRegistration {
   favouriteClub: string;
   email?: string;
   emailConsent?: boolean;
+  gdprConsent?: boolean;
 }
 
 export interface ScoreRecord {
@@ -32,6 +34,12 @@ export interface LeaderboardEntry {
 export interface ScoreboardState {
   prizePot: number;
   leaderboard: LeaderboardEntry[];
+  latestResult: {
+    playerId: string;
+    displayName: string;
+    score: number;
+    createdAt: string;
+  } | null;
 }
 
 export interface ValidationResult {

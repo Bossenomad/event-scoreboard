@@ -10,35 +10,41 @@ export function validatePlayerRegistration(data: unknown): ValidationResult {
     return {
       valid: false,
       errors: {
-        displayName: 'Display name is required',
-        favouriteClub: 'Favourite club is required',
+        displayName: 'Namn krävs',
+        favouriteClub: 'Favoritlag krävs',
+        gdprConsent: 'Du måste godkänna GDPR-hantering',
       },
     };
   }
 
-  const { displayName, favouriteClub, email, emailConsent } = data as Record<string, unknown>;
+  const { displayName, favouriteClub, email, emailConsent, gdprConsent } = data as Record<
+    string,
+    unknown
+  >;
 
   // Validate displayName: required, 1–50 chars, trimmed
   if (displayName === undefined || displayName === null || typeof displayName !== 'string') {
-    errors.displayName = 'Display name is required';
+    errors.displayName = 'Namn krävs';
   } else {
     const trimmed = displayName.trim();
     if (trimmed.length === 0) {
-      errors.displayName = 'Display name is required';
+      errors.displayName = 'Namn krävs';
+    } else if (trimmed.split(/\s+/).length < 2) {
+      errors.displayName = 'Ange förnamn och efternamn';
     } else if (trimmed.length > 50) {
-      errors.displayName = 'Display name must be 50 characters or fewer';
+      errors.displayName = 'Namn får vara max 50 tecken';
     }
   }
 
   // Validate favouriteClub: required, 1–100 chars, trimmed
   if (favouriteClub === undefined || favouriteClub === null || typeof favouriteClub !== 'string') {
-    errors.favouriteClub = 'Favourite club is required';
+    errors.favouriteClub = 'Favoritlag krävs';
   } else {
     const trimmed = favouriteClub.trim();
     if (trimmed.length === 0) {
-      errors.favouriteClub = 'Favourite club is required';
+      errors.favouriteClub = 'Favoritlag krävs';
     } else if (trimmed.length > 100) {
-      errors.favouriteClub = 'Favourite club must be 100 characters or fewer';
+      errors.favouriteClub = 'Favoritlag får vara max 100 tecken';
     }
   }
 
@@ -49,15 +55,19 @@ export function validatePlayerRegistration(data: unknown): ValidationResult {
   if (hasEmail) {
     const trimmedEmail = (email as string).trim();
     if (!EMAIL_REGEX.test(trimmedEmail)) {
-      errors.email = 'Email must be a valid email address';
+      errors.email = 'Ogiltig e-postadress';
     }
   }
 
   // Validate emailConsent: required and must be true if email is provided
   if (hasEmail) {
     if (emailConsent !== true) {
-      errors.emailConsent = 'Consent is required when providing an email address';
+      errors.emailConsent = 'Samtycke krävs när e-post anges';
     }
+  }
+
+  if (gdprConsent !== true) {
+    errors.gdprConsent = 'Du måste godkänna GDPR-hantering';
   }
 
   return {

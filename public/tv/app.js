@@ -8,10 +8,14 @@
   var leaderboardEmpty = document.getElementById('leaderboard-empty');
   var statusDot = document.getElementById('status-dot');
   var statusText = document.getElementById('status-text');
+  var latestPlayerEl = document.getElementById('latest-player');
+  var latestClubEl = document.getElementById('latest-club');
+  var latestScoreEl = document.getElementById('latest-score');
 
   // --- State ---
   var currentPrizePot = 0;
   var currentLeaderboard = [];
+  var lastStateFingerprint = '';
   var prizeAnimationId = null;
 
   // WebSocket reconnection state
@@ -22,10 +26,22 @@
 
   // Polling fallback state
   var pollTimer = null;
-  var POLL_INTERVAL = 5000;
+  var POLL_INTERVAL = 60000;
 
   // --- Initialization ---
-  connectWebSocket();
+  if (location.protocol === 'file:') {
+    applyFilePreviewScale();
+    window.addEventListener('resize', applyFilePreviewScale);
+    window.addEventListener('load', applyFilePreviewScale);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(applyFilePreviewScale);
+    }
+    setTimeout(applyFilePreviewScale, 50);
+    setTimeout(applyFilePreviewScale, 250);
+    startMockPreview();
+  } else {
+    connectWebSocket();
+  }
 
   // --- WebSocket connection ---
 
@@ -131,21 +147,28 @@
   function setConnectionStatus(status) {
     statusDot.className = 'status-dot';
     if (status === 'connected') {
-      statusText.textContent = 'Connected';
+      statusText.textContent = 'Ansluten';
     } else if (status === 'disconnected') {
       statusDot.classList.add('disconnected');
-      statusText.textContent = 'Reconnecting…';
+      statusText.textContent = 'Återansluter…';
     } else if (status === 'polling') {
       statusDot.classList.add('polling');
-      statusText.textContent = 'Polling';
+      statusText.textContent = 'Polling (60s)';
     }
   }
 
   // --- State update handler ---
 
   function handleStateUpdate(data) {
+    var nextFingerprint = JSON.stringify(data || {});
+    if (nextFingerprint === lastStateFingerprint) {
+      return;
+    }
+    lastStateFingerprint = nextFingerprint;
+
     var newPrizePot = typeof data.prizePot === 'number' ? data.prizePot : 0;
     var newLeaderboard = Array.isArray(data.leaderboard) ? data.leaderboard : [];
+    var latestResult = data.latestResult || null;
 
     // Animate prize pot if value changed
     if (newPrizePot !== currentPrizePot) {
@@ -154,6 +177,7 @@
 
     // Update leaderboard with animations
     updateLeaderboard(newLeaderboard);
+    updateLatestResult(latestResult);
 
     currentPrizePot = newPrizePot;
     currentLeaderboard = newLeaderboard;
@@ -201,7 +225,7 @@
   }
 
   function formatNumber(num) {
-    return num.toLocaleString('en-GB');
+    return num.toLocaleString('sv-SE');
   }
 
   // --- Leaderboard rendering ---
@@ -256,7 +280,7 @@
     var nameEl = document.createElement('span');
     nameEl.className = 'col-name';
     nameEl.setAttribute('role', 'cell');
-    nameEl.textContent = entry.displayName || '';
+    nameEl.textContent = formatDisplayNameForTv(entry.displayName || '');
 
     var clubEl = document.createElement('span');
     clubEl.className = 'col-club';
@@ -274,6 +298,93 @@
     row.appendChild(scoreEl);
 
     return row;
+  }
+
+  function updateLatestResult(latestResult) {
+    if (!latestResult) {
+      latestPlayerEl.textContent = '-';
+      latestClubEl.textContent = '-';
+      latestScoreEl.textContent = '0';
+      return;
+    }
+
+    latestPlayerEl.textContent = formatDisplayNameForTv(latestResult.displayName || '');
+    latestClubEl.textContent = getLatestClub(latestResult);
+    latestScoreEl.textContent = formatNumber(latestResult.score || 0);
+  }
+
+  function getLatestClub(latestResult) {
+    if (latestResult.favouriteClub) {
+      return latestResult.favouriteClub;
+    }
+    for (var i = 0; i < currentLeaderboard.length; i++) {
+      if (currentLeaderboard[i].playerId === latestResult.playerId) {
+        return currentLeaderboard[i].favouriteClub || '-';
+      }
+    }
+    return '-';
+  }
+
+  function formatDisplayNameForTv(displayName) {
+    var trimmed = (displayName || '').trim();
+    if (!trimmed) return '';
+
+    var parts = trimmed.split(/\s+/);
+    if (parts.length < 2) {
+      return parts[0];
+    }
+
+    return parts[0] + ' ' + parts[1].charAt(0).toUpperCase();
+  }
+
+  function startMockPreview() {
+    setConnectionStatus('polling');
+
+    var mockState = {
+      prizePot: 3560,
+      leaderboard: [
+        { playerId: 'p1', displayName: 'Göran Lind', favouriteClub: 'RÖGLE', score: 47 },
+        { playerId: 'p2', displayName: 'Åke Gustavsson', favouriteClub: 'BJÖRKLÖVEN', score: 45 },
+        { playerId: 'p3', displayName: 'Birgitta Johansson', favouriteClub: 'BRYNÄS', score: 38 },
+        { playerId: 'p4', displayName: 'Börje Holm', favouriteClub: 'HV71', score: 33 },
+        { playerId: 'p5', displayName: 'Annika Zetterberg', favouriteClub: 'FÄRJESTAD', score: 31 }
+      ],
+      latestResult: {
+        playerId: 'p1',
+        displayName: 'Göran Lind',
+        favouriteClub: 'RÖGLE',
+        score: 27,
+        createdAt: new Date().toISOString()
+      }
+    };
+
+    handleStateUpdate(mockState);
+    statusText.textContent = 'Förhandsvisning';
+  }
+
+  function applyFilePreviewScale() {
+    var canvas = document.querySelector('.tv-canvas');
+    if (!canvas) return;
+
+    var rootStyle = getComputedStyle(document.documentElement);
+    var padRaw = rootStyle.getPropertyValue('--viewport-pad') || '16px';
+    var pad = parseFloat(padRaw) || 16;
+
+    var availableWidth = Math.max(window.innerWidth - (pad * 2), 1);
+    var availableHeight = Math.max(window.innerHeight - (pad * 2), 1);
+
+    var contentWidth = Math.max(canvas.scrollWidth, 1920);
+    var contentHeight = Math.max(canvas.scrollHeight, 1080);
+
+    var scaleByWidth = availableWidth / contentWidth;
+    var scaleByHeight = availableHeight / contentHeight;
+    var scale = Math.min(scaleByWidth, scaleByHeight);
+
+    if (!isFinite(scale) || scale <= 0) {
+      scale = 1;
+    }
+
+    document.documentElement.style.setProperty('--tv-scale', String(scale));
   }
 
 })();

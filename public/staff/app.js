@@ -10,6 +10,10 @@
   var scoreInput = document.getElementById('score-input');
   var refreshBtn = document.getElementById('refresh-btn');
   var playerCount = document.getElementById('player-count');
+  var editDisplayNameInput = document.getElementById('edit-displayName');
+  var editFavouriteClubInput = document.getElementById('edit-favouriteClub');
+  var savePlayerBtn = document.getElementById('save-player-btn');
+  var exportCsvBtn = document.getElementById('export-csv-btn');
 
   // Confirmation overlay elements
   var confirmationOverlay = document.getElementById('confirmation-overlay');
@@ -28,6 +32,7 @@
   // State: the pending submission waiting for confirmation
   var pendingSubmission = null;
   var toastTimer = null;
+  var playersById = {};
 
   // --- Initialization ---
 
@@ -51,7 +56,7 @@
         populatePlayerSelect(data.players || []);
       })
       .catch(function () {
-        showServerError('Unable to load player list. Please check your connection.');
+        showServerError('Kunde inte hämta spelarlistan.');
       })
       .finally(function () {
         refreshBtn.disabled = false;
@@ -73,8 +78,11 @@
       return a.displayName.localeCompare(b.displayName);
     });
 
+    playersById = {};
+
     // Add player options
     for (var i = 0; i < players.length; i++) {
+      playersById[players[i].id] = players[i];
       var option = document.createElement('option');
       option.value = players[i].id;
       option.textContent = players[i].displayName + ' (' + players[i].favouriteClub + ')';
@@ -91,7 +99,8 @@
     }
 
     // Update player count
-    playerCount.textContent = players.length + ' player' + (players.length !== 1 ? 's' : '') + ' registered';
+    playerCount.textContent = players.length + ' spelare registrerade';
+    syncSelectedPlayerDetails();
   }
 
   refreshBtn.addEventListener('click', function () {
@@ -131,16 +140,16 @@
     var errors = {};
 
     if (!playerSelect.value) {
-      errors.playerId = 'Please select a player';
+      errors.playerId = 'Välj en spelare';
     }
 
     var scoreVal = scoreInput.value.trim();
     if (scoreVal === '') {
-      errors.score = 'Score is required';
+      errors.score = 'Poäng krävs';
     } else {
       var num = Number(scoreVal);
       if (!Number.isInteger(num) || num <= 0) {
-        errors.score = 'Score must be a positive whole number';
+        errors.score = 'Poäng måste vara ett positivt heltal';
       }
     }
 
@@ -201,7 +210,7 @@
     if (!pendingSubmission) return;
 
     confirmBtn.disabled = true;
-    confirmBtn.textContent = 'Submitting…';
+    confirmBtn.textContent = 'Sparar…';
 
     var body = {
       playerId: pendingSubmission.playerId,
@@ -230,20 +239,20 @@
           showFieldErrors(result.data.fields);
         } else if (result.status === 404) {
           hideConfirmation();
-          showServerError('Player not found. The player list has been refreshed.');
+          showServerError('Spelaren hittades inte. Listan uppdaterades.');
           loadPlayers();
         } else {
           hideConfirmation();
-          showServerError(result.data.error || 'Something went wrong. Please try again.');
+          showServerError(result.data.error || 'Något gick fel. Försök igen.');
         }
       })
       .catch(function () {
         hideConfirmation();
-        showServerError('Unable to connect to the server. Please check your connection and try again.');
+        showServerError('Kunde inte ansluta till servern.');
       })
       .finally(function () {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Confirm';
+        confirmBtn.textContent = 'Bekräfta';
       });
   });
 
@@ -319,6 +328,24 @@
     }
   }
 
+  function showEditError(fieldName, message) {
+    var id = fieldName === 'displayName' ? 'edit-displayName-error' : 'edit-favouriteClub-error';
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = message;
+    el.classList.add('visible');
+  }
+
+  function clearEditErrors() {
+    var ids = ['edit-displayName-error', 'edit-favouriteClub-error'];
+    for (var i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      if (!el) continue;
+      el.textContent = '';
+      el.classList.remove('visible');
+    }
+  }
+
   function clearAllFieldErrors() {
     clearFieldError('playerId');
     clearFieldError('score');
@@ -334,3 +361,82 @@
     serverError.classList.remove('visible');
   }
 })();
+  playerSelect.addEventListener('change', function () {
+    syncSelectedPlayerDetails();
+  });
+
+  function syncSelectedPlayerDetails() {
+    var player = playersById[playerSelect.value];
+    if (!player) {
+      editDisplayNameInput.value = '';
+      editFavouriteClubInput.value = '';
+      return;
+    }
+
+    editDisplayNameInput.value = player.displayName || '';
+    editFavouriteClubInput.value = player.favouriteClub || '';
+  }
+
+  savePlayerBtn.addEventListener('click', function () {
+    hideServerError();
+    clearEditErrors();
+    var playerId = playerSelect.value;
+    var displayName = editDisplayNameInput.value.trim();
+    var favouriteClub = editFavouriteClubInput.value.trim();
+
+    if (!playerId) {
+      showServerError('Välj en spelare att redigera.');
+      return;
+    }
+    if (!displayName) {
+      showEditError('displayName', 'Namn krävs');
+      return;
+    }
+    if (displayName.split(/\s+/).length < 2) {
+      showEditError('displayName', 'Ange förnamn och efternamn');
+      return;
+    }
+    if (!favouriteClub) {
+      showEditError('favouriteClub', 'Favoritlag krävs');
+      return;
+    }
+
+    savePlayerBtn.disabled = true;
+    savePlayerBtn.textContent = 'Sparar spelare…';
+
+    fetch('/api/players/' + encodeURIComponent(playerId), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName: displayName, favouriteClub: favouriteClub })
+    })
+      .then(function (response) {
+        return response.json().then(function (json) {
+          return { ok: response.ok, status: response.status, data: json };
+        });
+      })
+      .then(function (result) {
+        if (!result.ok) {
+          if (result.status === 400 && result.data.fields) {
+            if (result.data.fields.displayName) showEditError('displayName', result.data.fields.displayName);
+            if (result.data.fields.favouriteClub) showEditError('favouriteClub', result.data.fields.favouriteClub);
+            return;
+          }
+          showServerError(result.data.error || 'Kunde inte uppdatera spelare.');
+          return;
+        }
+
+        showSuccessToast();
+        loadPlayers();
+      })
+      .catch(function () {
+        showServerError('Kunde inte ansluta till servern.');
+      })
+      .finally(function () {
+        savePlayerBtn.disabled = false;
+        savePlayerBtn.textContent = 'Spara spelarinfo';
+      });
+  });
+
+  exportCsvBtn.addEventListener('click', function () {
+    window.location.href = '/api/players/export/csv';
+  });

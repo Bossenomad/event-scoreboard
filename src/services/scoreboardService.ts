@@ -12,9 +12,12 @@ import {
   getAllPlayers,
   getPlayerById,
   deletePlayer as dbDeletePlayer,
+  updatePlayer as dbUpdatePlayer,
   insertScore,
   getLeaderboard,
   getPrizePot,
+  getLatestResult,
+  getScoresExportRows,
 } from '../db/dataAccess.js';
 
 export class ValidationError extends Error {
@@ -66,6 +69,7 @@ export function createScoreboardService(db: Database.Database) {
         favouriteClub: data.favouriteClub.trim(),
         email: data.email?.trim() || undefined,
         emailConsent: data.emailConsent,
+        gdprConsent: data.gdprConsent,
       });
 
       return toPlayerResponse(player);
@@ -93,13 +97,54 @@ export function createScoreboardService(db: Database.Database) {
       return {
         prizePot: getPrizePot(db),
         leaderboard: getLeaderboard(db),
+        latestResult: getLatestResult(db),
       };
+    },
+
+    updatePlayer(id: string, data: PlayerRegistration): PlayerResponse {
+      const validation: ValidationResult = validatePlayerRegistration({
+        ...data,
+        gdprConsent: true,
+      });
+      if (!validation.valid) {
+        throw new ValidationError(validation.errors);
+      }
+
+      const updated = dbUpdatePlayer(db, id, {
+        displayName: data.displayName.trim(),
+        favouriteClub: data.favouriteClub.trim(),
+      });
+
+      if (!updated) {
+        throw new PlayerNotFoundError(id);
+      }
+
+      return toPlayerResponse(updated);
     },
 
     deletePlayer(id: string): boolean {
       return dbDeletePlayer(db, id);
     },
+
+    getScoresCsv(): string {
+      const rows = getScoresExportRows(db);
+      const header = 'tid,namn,favoritlag,poang';
+      const escapedRows = rows.map((row) =>
+        [
+          escapeCsvValue(row.createdAt),
+          escapeCsvValue(row.displayName),
+          escapeCsvValue(row.favouriteClub),
+          escapeCsvValue(String(row.score)),
+        ].join(',')
+      );
+      return [header, ...escapedRows].join('\n');
+    },
   };
+}
+
+function escapeCsvValue(value: string): string {
+  const escaped = value.replace(/"/g, '""');
+  return `"${escaped}"`;
 }
 
 export type ScoreboardService = ReturnType<typeof createScoreboardService>;
