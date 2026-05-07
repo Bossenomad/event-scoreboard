@@ -2,7 +2,7 @@ import express from 'express';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type Database from 'better-sqlite3';
+import type { Pool } from 'pg';
 import { getDatabase } from './db/database.js';
 import { createScoreboardService } from './services/scoreboardService.js';
 import { createPlayersRouter } from './routes/players.js';
@@ -38,22 +38,6 @@ app.get('/', (_req, res) => {
   res.redirect('/tv');
 });
 
-// Initialize database and service layer
-const db: Database.Database = getDatabase();
-const service = createScoreboardService(db);
-
-// Placeholder broadcast function — will be replaced by WebSocket module in Task 7
-let broadcastFn: () => void = () => {};
-
-/** Allows the WebSocket module to replace the placeholder broadcast function. */
-export function setBroadcastFn(fn: () => void): void {
-  broadcastFn = fn;
-}
-
-// Mount API routes
-app.use('/api/players', createPlayersRouter(service, () => broadcastFn()));
-app.use('/api', createScoresRouter(service, () => broadcastFn()));
-
 // QR code configuration
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const registrationUrl = getRegistrationUrl(BASE_URL);
@@ -63,13 +47,24 @@ export function createApp() {
 }
 
 const server = http.createServer(app);
-
-// Set up WebSocket server and wire broadcast function
-const broadcast = setupWebSocket(server, service);
-setBroadcastFn(broadcast);
+let db: Pool;
 
 // Generate QR code at startup and mount the route
 async function startServer() {
+  db = await getDatabase();
+  const service = createScoreboardService(db);
+
+  let broadcastFn: () => void = () => {};
+  const setBroadcastFn = (fn: () => void): void => {
+    broadcastFn = fn;
+  };
+
+  app.use('/api/players', createPlayersRouter(service, () => broadcastFn()));
+  app.use('/api', createScoresRouter(service, () => broadcastFn()));
+
+  const broadcast = setupWebSocket(server, service);
+  setBroadcastFn(broadcast);
+
   const qrCodeSvg = await generateQRCode(BASE_URL);
   app.use('/api/qrcode', createQRCodeRouter(qrCodeSvg, registrationUrl));
 
@@ -81,5 +76,5 @@ async function startServer() {
 
 startServer();
 
-export { app, server, service, db };
+export { app, server, db };
 export default app;

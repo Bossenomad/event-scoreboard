@@ -1,11 +1,9 @@
-import type Database from 'better-sqlite3';
+import type { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 import type { Player, ScoreRecord, LeaderboardEntry } from '../types.js';
 
-// --- Player operations ---
-
-export function insertPlayer(
-  db: Database.Database,
+export async function insertPlayer(
+  db: Pool,
   data: {
     displayName: string;
     favouriteClub: string;
@@ -13,267 +11,195 @@ export function insertPlayer(
     emailConsent?: boolean;
     gdprConsent?: boolean;
   }
-): Player {
+): Promise<Player> {
   const id = uuidv4();
-  const stmt = db.prepare(`
-    INSERT INTO players (id, display_name, favourite_club, email, email_consent, gdpr_consent, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-  `);
-  stmt.run(
-    id,
-    data.displayName,
-    data.favouriteClub,
-    data.email ?? null,
-    data.emailConsent ? 1 : 0,
-    data.gdprConsent ? 1 : 0
+  await db.query(
+    `INSERT INTO players (id, display_name, favourite_club, email, email_consent, gdpr_consent)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [
+      id,
+      data.displayName,
+      data.favouriteClub,
+      data.email ?? null,
+      !!data.emailConsent,
+      !!data.gdprConsent,
+    ]
   );
-
-  return getPlayerById(db, id)!;
+  return (await getPlayerById(db, id))!;
 }
 
-export function getAllPlayers(db: Database.Database): Player[] {
-  const rows = db.prepare('SELECT * FROM players ORDER BY created_at ASC').all() as Array<{
-    id: string;
-    display_name: string;
-    favourite_club: string;
-    email: string | null;
-    email_consent: number;
-    gdpr_consent: number;
-    created_at: string;
-  }>;
-
-  return rows.map(mapRowToPlayer);
+export async function getAllPlayers(db: Pool): Promise<Player[]> {
+  const result = await db.query(
+    `SELECT id, display_name, favourite_club, email, email_consent, gdpr_consent, created_at
+     FROM players ORDER BY created_at ASC`
+  );
+  return result.rows.map(mapRowToPlayer);
 }
 
-export function getPlayerById(db: Database.Database, id: string): Player | undefined {
-  const row = db.prepare('SELECT * FROM players WHERE id = ?').get(id) as
-    | {
-        id: string;
-        display_name: string;
-        favourite_club: string;
-        email: string | null;
-        email_consent: number;
-        gdpr_consent: number;
-        created_at: string;
-      }
-    | undefined;
-
+export async function getPlayerById(db: Pool, id: string): Promise<Player | undefined> {
+  const result = await db.query(
+    `SELECT id, display_name, favourite_club, email, email_consent, gdpr_consent, created_at
+     FROM players WHERE id = $1`,
+    [id]
+  );
+  const row = result.rows[0];
   return row ? mapRowToPlayer(row) : undefined;
 }
 
-export function deletePlayer(db: Database.Database, id: string): boolean {
-  const result = db.prepare('DELETE FROM players WHERE id = ?').run(id);
-  return result.changes > 0;
+export async function deletePlayer(db: Pool, id: string): Promise<boolean> {
+  const result = await db.query('DELETE FROM players WHERE id = $1', [id]);
+  return (result.rowCount ?? 0) > 0;
 }
 
-export function updatePlayer(
-  db: Database.Database,
+export async function updatePlayer(
+  db: Pool,
   id: string,
   data: { displayName: string; favouriteClub: string }
-): Player | undefined {
-  const result = db
-    .prepare(
-      `
-      UPDATE players
-      SET display_name = ?, favourite_club = ?
-      WHERE id = ?
-    `
-    )
-    .run(data.displayName, data.favouriteClub, id);
-
-  if (result.changes === 0) {
+): Promise<Player | undefined> {
+  const result = await db.query(
+    `UPDATE players SET display_name = $1, favourite_club = $2 WHERE id = $3`,
+    [data.displayName, data.favouriteClub, id]
+  );
+  if ((result.rowCount ?? 0) === 0) {
     return undefined;
   }
-
   return getPlayerById(db, id);
 }
 
-// --- Score operations ---
-
-export function insertScore(
-  db: Database.Database,
+export async function insertScore(
+  db: Pool,
   data: { playerId: string; score: number }
-): ScoreRecord {
+): Promise<ScoreRecord> {
   const id = uuidv4();
-  const stmt = db.prepare(`
-    INSERT INTO scores (id, player_id, score, created_at)
-    VALUES (?, ?, ?, datetime('now'))
-  `);
-  stmt.run(id, data.playerId, data.score);
-
-  const row = db.prepare('SELECT * FROM scores WHERE id = ?').get(id) as {
-    id: string;
-    player_id: string;
-    score: number;
-    created_at: string;
-  };
-
+  const result = await db.query(
+    `INSERT INTO scores (id, player_id, score)
+     VALUES ($1, $2, $3)
+     RETURNING id, player_id, score, created_at`,
+    [id, data.playerId, data.score]
+  );
+  const row = result.rows[0];
   return {
     id: row.id,
     playerId: row.player_id,
-    score: row.score,
-    createdAt: row.created_at,
+    score: Number(row.score),
+    createdAt: toIso(row.created_at),
   };
 }
 
-export function getScoresByPlayerId(db: Database.Database, playerId: string): ScoreRecord[] {
-  const rows = db
-    .prepare('SELECT * FROM scores WHERE player_id = ? ORDER BY created_at ASC')
-    .all(playerId) as Array<{
-    id: string;
-    player_id: string;
-    score: number;
-    created_at: string;
-  }>;
-
-  return rows.map((row) => ({
+export async function getScoresByPlayerId(db: Pool, playerId: string): Promise<ScoreRecord[]> {
+  const result = await db.query(
+    `SELECT id, player_id, score, created_at
+     FROM scores WHERE player_id = $1
+     ORDER BY created_at ASC`,
+    [playerId]
+  );
+  return result.rows.map((row: { id: string; player_id: string; score: number; created_at: string }) => ({
     id: row.id,
     playerId: row.player_id,
-    score: row.score,
-    createdAt: row.created_at,
+    score: Number(row.score),
+    createdAt: toIso(row.created_at),
   }));
 }
 
-// --- Leaderboard and prize pot ---
+export async function getLeaderboard(db: Pool): Promise<LeaderboardEntry[]> {
+  const result = await db.query(
+    `WITH player_best AS (
+       SELECT s.player_id, MAX(s.score) AS best_score
+       FROM scores s
+       GROUP BY s.player_id
+     ),
+     first_reached AS (
+       SELECT pb.player_id, pb.best_score, MIN(s.created_at) AS first_reached_at
+       FROM player_best pb
+       JOIN scores s ON s.player_id = pb.player_id AND s.score = pb.best_score
+       GROUP BY pb.player_id, pb.best_score
+     )
+     SELECT
+       p.id AS player_id,
+       p.display_name,
+       p.favourite_club,
+       fr.best_score AS score,
+       fr.first_reached_at
+     FROM first_reached fr
+     JOIN players p ON p.id = fr.player_id
+     ORDER BY fr.best_score DESC, fr.first_reached_at ASC
+     LIMIT 5`
+  );
 
-export function getLeaderboard(db: Database.Database): LeaderboardEntry[] {
-  const rows = db
-    .prepare(
-      `WITH player_best AS (
-        SELECT
-          s.player_id,
-          MAX(s.score) AS best_score
-        FROM scores s
-        GROUP BY s.player_id
-      ),
-      first_reached AS (
-        SELECT
-          pb.player_id,
-          pb.best_score,
-          MIN(s.created_at) AS first_reached_at
-        FROM player_best pb
-        JOIN scores s
-          ON s.player_id = pb.player_id
-         AND s.score = pb.best_score
-        GROUP BY pb.player_id, pb.best_score
-      )
-      SELECT
-        p.id AS player_id,
-        p.display_name,
-        p.favourite_club,
-        fr.best_score AS score,
-        fr.first_reached_at
-      FROM first_reached fr
-      JOIN players p ON p.id = fr.player_id
-      ORDER BY fr.best_score DESC, fr.first_reached_at ASC
-      LIMIT 5`
-    )
-    .all() as Array<{
-    player_id: string;
-    display_name: string;
-    favourite_club: string;
-    score: number;
-    first_reached_at: string;
-  }>;
-
-  return rows.map((row, index) => ({
+  return result.rows.map((row: { player_id: string; display_name: string; favourite_club: string; score: number }, index: number) => ({
     rank: index + 1,
     playerId: row.player_id,
     displayName: row.display_name,
     favouriteClub: row.favourite_club,
-    score: row.score,
+    score: Number(row.score),
   }));
 }
 
-export function getPrizePot(db: Database.Database): number {
-  const row = db.prepare('SELECT COALESCE(SUM(score), 0) AS prize_pot FROM scores').get() as {
-    prize_pot: number;
-  };
-  return row.prize_pot;
+export async function getPrizePot(db: Pool): Promise<number> {
+  const result = await db.query('SELECT COALESCE(SUM(score), 0) AS prize_pot FROM scores');
+  return Number(result.rows[0].prize_pot);
 }
 
-export function getLatestResult(
-  db: Database.Database
-): { playerId: string; displayName: string; score: number; createdAt: string } | null {
-  const row = db
-    .prepare(
-      `SELECT
-        s.player_id,
-        p.display_name,
-        s.score,
-        s.created_at
-      FROM scores s
-      JOIN players p ON p.id = s.player_id
-      ORDER BY s.created_at DESC
-      LIMIT 1`
-    )
-    .get() as
-    | {
-        player_id: string;
-        display_name: string;
-        score: number;
-        created_at: string;
-      }
-    | undefined;
-
-  if (!row) {
-    return null;
-  }
-
+export async function getLatestResult(
+  db: Pool
+): Promise<{ playerId: string; displayName: string; score: number; createdAt: string } | null> {
+  const result = await db.query(
+    `SELECT s.player_id, p.display_name, s.score, s.created_at
+     FROM scores s
+     JOIN players p ON p.id = s.player_id
+     ORDER BY s.created_at DESC
+     LIMIT 1`
+  );
+  const row = result.rows[0];
+  if (!row) return null;
   return {
     playerId: row.player_id,
     displayName: row.display_name,
-    score: row.score,
-    createdAt: row.created_at,
+    score: Number(row.score),
+    createdAt: toIso(row.created_at),
   };
 }
 
-export function getScoresExportRows(db: Database.Database): Array<{
-  createdAt: string;
-  displayName: string;
-  favouriteClub: string;
-  score: number;
-}> {
-  return db
-    .prepare(
-      `SELECT
-        s.created_at AS createdAt,
-        p.display_name AS displayName,
-        p.favourite_club AS favouriteClub,
-        s.score AS score
-      FROM scores s
-      JOIN players p ON p.id = s.player_id
-      ORDER BY s.created_at ASC`
-    )
-    .all() as Array<{
-    createdAt: string;
-    displayName: string;
-    favouriteClub: string;
-    score: number;
-  }>;
+export async function getScoresExportRows(db: Pool): Promise<
+  Array<{ createdAt: string; displayName: string; favouriteClub: string; score: number }>
+> {
+  const result = await db.query(
+    `SELECT s.created_at, p.display_name, p.favourite_club, s.score
+     FROM scores s
+     JOIN players p ON p.id = s.player_id
+     ORDER BY s.created_at ASC`
+  );
+  return result.rows.map((row: { created_at: string; display_name: string; favourite_club: string; score: number }) => ({
+    createdAt: toIso(row.created_at),
+    displayName: row.display_name,
+    favouriteClub: row.favourite_club,
+    score: Number(row.score),
+  }));
 }
-
-// --- Helpers ---
 
 function mapRowToPlayer(row: {
   id: string;
   display_name: string;
   favourite_club: string;
   email: string | null;
-  email_consent: number;
-  gdpr_consent: number;
-  created_at: string;
+  email_consent: boolean;
+  gdpr_consent: boolean;
+  created_at: string | Date;
 }): Player {
   const player: Player = {
     id: row.id,
     displayName: row.display_name,
     favouriteClub: row.favourite_club,
-    emailConsent: row.email_consent === 1,
-    gdprConsent: row.gdpr_consent === 1,
-    createdAt: row.created_at,
+    emailConsent: !!row.email_consent,
+    gdprConsent: !!row.gdpr_consent,
+    createdAt: toIso(row.created_at),
   };
   if (row.email) {
     player.email = row.email;
   }
   return player;
+}
+
+function toIso(value: string | Date): string {
+  return new Date(value).toISOString();
 }

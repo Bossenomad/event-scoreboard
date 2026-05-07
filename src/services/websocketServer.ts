@@ -19,9 +19,9 @@ export function setupWebSocket(
 ): () => void {
   const wss = new WebSocketServer({ server, path: '/ws' });
 
-  wss.on('connection', (ws: WebSocket) => {
+  wss.on('connection', async (ws: WebSocket) => {
     try {
-      const state = service.getScoreboardState();
+      const state = await service.getScoreboardState();
       const message = JSON.stringify({ type: 'state', data: state });
       ws.send(message);
     } catch (err) {
@@ -39,22 +39,23 @@ export function setupWebSocket(
 
   /** Broadcast current scoreboard state to all connected clients. */
   function broadcast(): void {
-    try {
-      const state = service.getScoreboardState();
-      const message = JSON.stringify({ type: 'state', data: state });
-
-      for (const client of wss.clients) {
-        if (client.readyState === WebSocket.OPEN) {
-          try {
-            client.send(message);
-          } catch (err) {
-            console.error('WebSocket: error sending to client', err);
+    service
+      .getScoreboardState()
+      .then((state) => {
+        const message = JSON.stringify({ type: 'state', data: state });
+        for (const client of wss.clients) {
+          if (client.readyState === WebSocket.OPEN) {
+            try {
+              client.send(message);
+            } catch (err) {
+              console.error('WebSocket: error sending to client', err);
+            }
           }
         }
-      }
-    } catch (err) {
-      console.error('WebSocket: error during broadcast', err);
-    }
+      })
+      .catch((err) => {
+        console.error('WebSocket: error during broadcast', err);
+      });
   }
 
   return broadcast;

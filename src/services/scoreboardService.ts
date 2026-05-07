@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { Pool } from 'pg';
 import type {
   Player,
   PlayerRegistration,
@@ -37,7 +37,6 @@ export class PlayerNotFoundError extends Error {
   }
 }
 
-/** Response type for registerPlayer — excludes email for GDPR compliance */
 export interface PlayerResponse {
   id: string;
   displayName: string;
@@ -56,15 +55,15 @@ function toPlayerResponse(player: Player): PlayerResponse {
   };
 }
 
-export function createScoreboardService(db: Database.Database) {
+export function createScoreboardService(db: Pool) {
   return {
-    registerPlayer(data: PlayerRegistration): PlayerResponse {
+    async registerPlayer(data: PlayerRegistration): Promise<PlayerResponse> {
       const validation: ValidationResult = validatePlayerRegistration(data);
       if (!validation.valid) {
         throw new ValidationError(validation.errors);
       }
 
-      const player = insertPlayer(db, {
+      const player = await insertPlayer(db, {
         displayName: data.displayName.trim(),
         favouriteClub: data.favouriteClub.trim(),
         email: data.email?.trim() || undefined,
@@ -75,17 +74,17 @@ export function createScoreboardService(db: Database.Database) {
       return toPlayerResponse(player);
     },
 
-    getPlayers(): Player[] {
+    async getPlayers(): Promise<Player[]> {
       return getAllPlayers(db);
     },
 
-    recordScore(playerId: string, score: number): ScoreRecord {
+    async recordScore(playerId: string, score: number): Promise<ScoreRecord> {
       const validation: ValidationResult = validateScoreEntry({ playerId, score });
       if (!validation.valid) {
         throw new ValidationError(validation.errors);
       }
 
-      const player = getPlayerById(db, playerId);
+      const player = await getPlayerById(db, playerId);
       if (!player) {
         throw new PlayerNotFoundError(playerId);
       }
@@ -93,15 +92,16 @@ export function createScoreboardService(db: Database.Database) {
       return insertScore(db, { playerId, score });
     },
 
-    getScoreboardState(): ScoreboardState {
-      return {
-        prizePot: getPrizePot(db),
-        leaderboard: getLeaderboard(db),
-        latestResult: getLatestResult(db),
-      };
+    async getScoreboardState(): Promise<ScoreboardState> {
+      const [prizePot, leaderboard, latestResult] = await Promise.all([
+        getPrizePot(db),
+        getLeaderboard(db),
+        getLatestResult(db),
+      ]);
+      return { prizePot, leaderboard, latestResult };
     },
 
-    updatePlayer(id: string, data: PlayerRegistration): PlayerResponse {
+    async updatePlayer(id: string, data: PlayerRegistration): Promise<PlayerResponse> {
       const validation: ValidationResult = validatePlayerRegistration({
         ...data,
         gdprConsent: true,
@@ -110,7 +110,7 @@ export function createScoreboardService(db: Database.Database) {
         throw new ValidationError(validation.errors);
       }
 
-      const updated = dbUpdatePlayer(db, id, {
+      const updated = await dbUpdatePlayer(db, id, {
         displayName: data.displayName.trim(),
         favouriteClub: data.favouriteClub.trim(),
       });
@@ -122,12 +122,12 @@ export function createScoreboardService(db: Database.Database) {
       return toPlayerResponse(updated);
     },
 
-    deletePlayer(id: string): boolean {
+    async deletePlayer(id: string): Promise<boolean> {
       return dbDeletePlayer(db, id);
     },
 
-    getScoresCsv(): string {
-      const rows = getScoresExportRows(db);
+    async getScoresCsv(): Promise<string> {
+      const rows = await getScoresExportRows(db);
       const header = 'tid,namn,favoritlag,poang';
       const escapedRows = rows.map((row) =>
         [

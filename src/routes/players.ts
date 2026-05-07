@@ -20,11 +20,11 @@ export function createPlayersRouter(
    * Returns 201 with player data (excluding email) on success.
    * Returns 400 with field errors on validation failure.
    */
-  router.post('/', (req: Request, res: Response) => {
+  router.post('/', async (req: Request, res: Response) => {
     try {
       const { displayName, favouriteClub, email, emailConsent, gdprConsent } = req.body;
 
-      const player = service.registerPlayer({
+      const player = await service.registerPlayer({
         displayName,
         favouriteClub,
         email,
@@ -50,8 +50,8 @@ export function createPlayersRouter(
    * List all registered players (used by Staff Interface).
    * Returns 200 with { players: [...] }.
    */
-  router.get('/', (_req: Request, res: Response) => {
-    const players = service.getPlayers();
+  router.get('/', async (_req: Request, res: Response) => {
+    const players = await service.getPlayers();
 
     // Exclude email from response for GDPR compliance
     const sanitizedPlayers = players.map(({ id, displayName, favouriteClub, createdAt }) => ({
@@ -69,9 +69,9 @@ export function createPlayersRouter(
    * Delete a player and all associated data (GDPR data deletion).
    * Returns 204 on success, 404 if player not found.
    */
-  router.delete('/:id', (req: Request, res: Response) => {
+  router.delete('/:id', async (req: Request, res: Response) => {
     const id = req.params.id as string;
-    const deleted = service.deletePlayer(id);
+    const deleted = await service.deletePlayer(id);
 
     if (deleted) {
       if (broadcastFn) {
@@ -83,12 +83,12 @@ export function createPlayersRouter(
     }
   });
 
-  router.put('/:id', (req: Request, res: Response) => {
+  router.put('/:id', async (req: Request, res: Response) => {
     try {
       const id = req.params.id as string;
       const { displayName, favouriteClub } = req.body;
 
-      const player = service.updatePlayer(id, {
+      const player = await service.updatePlayer(id, {
         displayName,
         favouriteClub,
       });
@@ -114,8 +114,8 @@ export function createPlayersRouter(
     }
   });
 
-  router.get('/export/csv', (_req: Request, res: Response) => {
-    const csv = service.getScoresCsv();
+  router.get('/export/csv', async (_req: Request, res: Response) => {
+    const csv = await service.getScoresCsv();
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader(
       'Content-Disposition',

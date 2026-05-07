@@ -27,14 +27,14 @@ export function createScoresRouter(
    * Returns 201 with score data on success.
    * Returns 400 on validation failure, 404 if player not found.
    */
-  router.post('/scores', (req: Request, res: Response) => {
+  router.post('/scores', async (req: Request, res: Response) => {
     try {
       const { playerId, score } = req.body;
 
-      const scoreRecord = service.recordScore(playerId, score);
+      const scoreRecord = await service.recordScore(playerId, score);
 
       // Look up the player name for the response
-      const players = service.getPlayers();
+      const players = await service.getPlayers();
       const player = players.find((p) => p.id === playerId);
       const playerName = player?.displayName ?? '';
 
@@ -72,8 +72,8 @@ export function createScoresRouter(
    * Get current prize pot and leaderboard.
    * Returns 200 with { prizePot, leaderboard }.
    */
-  router.get('/scoreboard', (_req: Request, res: Response) => {
-    const state = service.getScoreboardState();
+  router.get('/scoreboard', async (_req: Request, res: Response) => {
+    const state = await service.getScoreboardState();
     res.status(200).json(state);
   });
 
