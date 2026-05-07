@@ -84,8 +84,6 @@
     var trimmedName = (data.displayName || '').trim();
     if (trimmedName.length === 0) {
       errors.displayName = 'Namn krävs';
-    } else if (trimmedName.split(/\s+/).length < 2) {
-      errors.displayName = 'Ange förnamn och efternamn';
     } else if (trimmedName.length > 50) {
       errors.displayName = 'Namn får vara max 50 tecken';
     }

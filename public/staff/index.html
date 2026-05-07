@@ -108,6 +108,7 @@
     }
 
     select,
+    input[type="text"],
     input[type="number"] {
       width: 100%;
       padding: 14px 16px;
@@ -130,12 +131,14 @@
     }
 
     select:focus,
+    input[type="text"]:focus,
     input[type="number"]:focus {
       outline: none;
       border-color: #4a6cf7;
     }
 
     select.error,
+    input[type="text"].error,
     input[type="number"].error {
       border-color: #e74c3c;
     }
@@ -374,8 +377,8 @@
 <body>
   <div class="container">
     <header>
-      <h1>🏒 Admin: Resultat</h1>
-      <p>Lägg till resultat och redigera spelare</p>
+      <h1>🏒 Admin: Registrera resultat</h1>
+      <p>Fyll i namn, favoritlag och poäng</p>
     </header>
 
     <div class="main-layout">
@@ -384,15 +387,15 @@
           <div class="server-error" id="server-error" role="alert"></div>
 
           <div class="form-group">
-            <div class="player-label-row">
-              <label for="player-select">Spelare</label>
-              <button type="button" class="btn-refresh" id="refresh-btn" aria-label="Uppdatera spelarlista">↻ Uppdatera</button>
-            </div>
-            <select id="player-select" name="playerId" required>
-              <option value="">— Välj spelare —</option>
-            </select>
-            <div class="field-error" id="playerId-error" role="alert"></div>
-            <div class="player-count" id="player-count"></div>
+            <label for="display-name-input">För- och efternamn</label>
+            <input type="text" id="display-name-input" name="displayName" placeholder="Förnamn Efternamn" maxlength="50" required autocomplete="name" list="player-name-suggestions">
+            <div class="field-error" id="displayName-error" role="alert"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="favourite-club-input">Favoritlag</label>
+            <input type="text" id="favourite-club-input" name="favouriteClub" placeholder="t.ex. Frölunda HC" maxlength="100" required list="club-suggestions">
+            <div class="field-error" id="favouriteClub-error" role="alert"></div>
           </div>
 
           <div class="form-group">
@@ -401,22 +404,11 @@
             <div class="field-error" id="score-error" role="alert"></div>
           </div>
 
-          <button type="submit" class="btn-submit" id="submit-btn">Spara resultat</button>
-
-          <div class="form-group" style="margin-top:24px; border-top:1px solid #ddd; padding-top:18px;">
-            <label for="edit-displayName">Redigera namn</label>
-            <input type="text" id="edit-displayName" placeholder="Förnamn Efternamn" maxlength="50">
-            <div class="field-error" id="edit-displayName-error" role="alert"></div>
-          </div>
-
-          <div class="form-group">
-            <label for="edit-favouriteClub">Redigera favoritlag</label>
-            <input type="text" id="edit-favouriteClub" placeholder="Lag" maxlength="100">
-            <div class="field-error" id="edit-favouriteClub-error" role="alert"></div>
-          </div>
-
-          <button type="button" class="btn-submit" id="save-player-btn" style="background:#0f7c54;">Spara spelarinfo</button>
+          <button type="submit" class="btn-submit" id="submit-btn">Registrera och spara resultat</button>
           <button type="button" class="btn-submit" id="export-csv-btn" style="margin-top:12px; background:#334466;">Exportera CSV</button>
+
+          <datalist id="player-name-suggestions"></datalist>
+          <datalist id="club-suggestions"></datalist>
         </form>
       </div>
 
@@ -432,11 +424,15 @@
   <!-- Confirmation overlay -->
   <div class="confirmation-overlay" id="confirmation-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-heading">
     <div class="confirmation-card">
-      <h2 id="confirm-heading">Bekräfta resultat</h2>
+      <h2 id="confirm-heading">Bekräfta registrering</h2>
       <div class="confirmation-details">
         <div class="detail-row">
           <span class="detail-label">Spelare</span>
           <span class="detail-value" id="confirm-player-name"></span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Favoritlag</span>
+          <span class="detail-value" id="confirm-player-club"></span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Poäng</span>

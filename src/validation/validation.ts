@@ -29,8 +29,6 @@ export function validatePlayerRegistration(data: unknown): ValidationResult {
     const trimmed = displayName.trim();
     if (trimmed.length === 0) {
       errors.displayName = 'Namn krävs';
-    } else if (trimmed.split(/\s+/).length < 2) {
-      errors.displayName = 'Ange förnamn och efternamn';
     } else if (trimmed.length > 50) {
       errors.displayName = 'Namn får vara max 50 tecken';
     }
