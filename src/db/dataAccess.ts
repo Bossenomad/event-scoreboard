@@ -13,46 +13,55 @@ export async function insertPlayer(
     gdprConsent?: boolean;
   }
 ): Promise<Player> {
-  const id = uuidv4();
-  const result = await db.query(
-    `INSERT INTO players (id, display_name, favourite_club, phone, email, email_consent, gdpr_consent)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING id, display_name, favourite_club, phone, email, email_consent, gdpr_consent, created_at`,
-    [id, data.displayName, data.favouriteClub, data.phone ?? null, data.email ?? null, !!data.emailConsent, !!data.gdprConsent]
-  );
-  return mapRowToPlayer(result.rows[0]);
+  const state = await db.readState();
+  const player: Player = {
+    id: uuidv4(),
+    displayName: data.displayName,
+    favouriteClub: data.favouriteClub,
+    phone: data.phone,
+    email: data.email,
+    emailConsent: !!data.emailConsent,
+    gdprConsent: !!data.gdprConsent,
+    createdAt: new Date().toISOString(),
+  };
+  state.players.push(player);
+  await db.writeState(state);
+  return player;
 }
 
 export async function getAllPlayers(db: DatabaseConnection): Promise<Player[]> {
-  const result = await db.query(
-    `SELECT id, display_name, favourite_club, phone, email, email_consent, gdpr_consent, created_at
-     FROM players ORDER BY created_at ASC`
-  );
-  return result.rows.map(mapRowToPlayer);
+  const state = await db.readState();
+  return [...state.players].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
 export async function getPlayerById(db: DatabaseConnection, id: string): Promise<Player | undefined> {
-  const result = await db.query(
-    `SELECT id, display_name, favourite_club, phone, email, email_consent, gdpr_consent, created_at
-     FROM players WHERE id = $1`,
-    [id]
-  );
-  return result.rows[0] ? mapRowToPlayer(result.rows[0]) : undefined;
+  const state = await db.readState();
+  return state.players.find((p) => p.id === id);
 }
 
 export async function deletePlayer(db: DatabaseConnection, id: string): Promise<boolean> {
-  const deletedPlayer = await db.query('DELETE FROM players WHERE id = $1', [id]);
-  return (deletedPlayer.rowCount ?? 0) > 0;
+  const state = await db.readState();
+  const exists = state.players.some((p) => p.id === id);
+  if (!exists) return false;
+  state.players = state.players.filter((p) => p.id !== id);
+  state.scores = state.scores.map((s) => (s.playerId === id ? { ...s, playerId: null } : s));
+  await db.writeState(state);
+  return true;
 }
 
 export async function purgeOldPlayerData(db: DatabaseConnection, retentionDays: number): Promise<number> {
   if (retentionDays <= 0) return 0;
-  const result = await db.query(
-    `DELETE FROM players
-     WHERE created_at < (NOW() - ($1::text || ' days')::interval)`,
-    [String(retentionDays)]
-  );
-  return result.rowCount ?? 0;
+  const state = await db.readState();
+  const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+  const oldIds = state.players
+    .filter((p) => new Date(p.createdAt).getTime() < cutoff)
+    .map((p) => p.id);
+  if (oldIds.length === 0) return 0;
+  const idSet = new Set(oldIds);
+  state.players = state.players.filter((p) => !idSet.has(p.id));
+  state.scores = state.scores.map((s) => (s.playerId && idSet.has(s.playerId) ? { ...s, playerId: null } : s));
+  await db.writeState(state);
+  return oldIds.length;
 }
 
 export async function updatePlayer(
@@ -60,28 +69,30 @@ export async function updatePlayer(
   id: string,
   data: { displayName: string; favouriteClub: string; phone?: string }
 ): Promise<Player | undefined> {
-  const result = await db.query(
-    `UPDATE players
-     SET display_name = $1, favourite_club = $2, phone = $3
-     WHERE id = $4
-     RETURNING id, display_name, favourite_club, phone, email, email_consent, gdpr_consent, created_at`,
-    [data.displayName, data.favouriteClub, data.phone ?? null, id]
-  );
-  return result.rows[0] ? mapRowToPlayer(result.rows[0]) : undefined;
+  const state = await db.readState();
+  const player = state.players.find((p) => p.id === id);
+  if (!player) return undefined;
+  player.displayName = data.displayName;
+  player.favouriteClub = data.favouriteClub;
+  player.phone = data.phone;
+  await db.writeState(state);
+  return player;
 }
 
 export async function insertScore(
   db: DatabaseConnection,
   data: { playerId: string | null; score: number }
 ): Promise<ScoreRecord> {
-  const id = uuidv4();
-  const result = await db.query(
-    `INSERT INTO scores (id, player_id, score)
-     VALUES ($1, $2, $3)
-     RETURNING id, player_id, score, created_at`,
-    [id, data.playerId, data.score]
-  );
-  return mapRowToScore(result.rows[0]);
+  const state = await db.readState();
+  const score: ScoreRecord = {
+    id: uuidv4(),
+    playerId: data.playerId,
+    score: data.score,
+    createdAt: new Date().toISOString(),
+  };
+  state.scores.push(score);
+  await db.writeState(state);
+  return score;
 }
 
 export async function attachScoreToPlayer(
@@ -89,14 +100,12 @@ export async function attachScoreToPlayer(
   scoreId: string,
   playerId: string
 ): Promise<ScoreRecord | undefined> {
-  const result = await db.query(
-    `UPDATE scores
-     SET player_id = $1
-     WHERE id = $2
-     RETURNING id, player_id, score, created_at`,
-    [playerId, scoreId]
-  );
-  return result.rows[0] ? mapRowToScore(result.rows[0]) : undefined;
+  const state = await db.readState();
+  const score = state.scores.find((s) => s.id === scoreId);
+  if (!score) return undefined;
+  score.playerId = playerId;
+  await db.writeState(state);
+  return score;
 }
 
 export async function createPendingTopScore(
@@ -105,164 +114,116 @@ export async function createPendingTopScore(
   scoreId: string,
   score: number
 ): Promise<void> {
-  await db.query(
-    `INSERT INTO pending_top_scores (token, score_id, score)
-     VALUES ($1, $2, $3)`,
-    [token, scoreId, score]
-  );
+  const state = await db.readState();
+  state.pendingTopScores.push({
+    token,
+    scoreId,
+    score,
+    createdAt: new Date().toISOString(),
+  });
+  await db.writeState(state);
 }
 
 export async function consumePendingTopScore(
   db: DatabaseConnection,
   token: string
 ): Promise<{ token: string; scoreId: string; score: number; createdAt: string } | undefined> {
-  const result = await db.query(
-    `DELETE FROM pending_top_scores
-     WHERE token = $1
-     RETURNING token, score_id, score, created_at`,
-    [token]
-  );
-  const row = result.rows[0];
-  if (!row) return undefined;
-  return {
-    token: row.token,
-    scoreId: row.score_id,
-    score: Number(row.score),
-    createdAt: toIso(row.created_at),
-  };
+  const state = await db.readState();
+  const idx = state.pendingTopScores.findIndex((p) => p.token === token);
+  if (idx === -1) return undefined;
+  const [row] = state.pendingTopScores.splice(idx, 1);
+  await db.writeState(state);
+  return row;
 }
 
 export async function deleteExpiredPendingTopScores(db: DatabaseConnection, ttlMinutes: number): Promise<number> {
-  const result = await db.query(
-    `DELETE FROM pending_top_scores
-     WHERE created_at < (NOW() - ($1::text || ' minutes')::interval)`,
-    [String(ttlMinutes)]
+  const state = await db.readState();
+  const cutoff = Date.now() - ttlMinutes * 60 * 1000;
+  const before = state.pendingTopScores.length;
+  state.pendingTopScores = state.pendingTopScores.filter(
+    (p) => new Date(p.createdAt).getTime() >= cutoff
   );
-  return result.rowCount ?? 0;
+  const deleted = before - state.pendingTopScores.length;
+  if (deleted > 0) {
+    await db.writeState(state);
+  }
+  return deleted;
 }
 
 export async function getLeaderboard(db: DatabaseConnection): Promise<LeaderboardEntry[]> {
-  const result = await db.query(
-    `WITH player_best AS (
-       SELECT s.player_id, MAX(s.score) AS best_score
-       FROM scores s
-       WHERE s.player_id IS NOT NULL
-       GROUP BY s.player_id
-     ),
-     first_reached AS (
-       SELECT pb.player_id, pb.best_score, MIN(s.created_at) AS first_reached_at
-       FROM player_best pb
-       JOIN scores s ON s.player_id = pb.player_id AND s.score = pb.best_score
-       GROUP BY pb.player_id, pb.best_score
-     )
-     SELECT
-       p.id AS player_id,
-       p.display_name,
-       p.favourite_club,
-       fr.best_score AS score,
-       fr.first_reached_at
-     FROM first_reached fr
-     JOIN players p ON p.id = fr.player_id
-     ORDER BY fr.best_score DESC, fr.first_reached_at ASC
-     LIMIT 5`
-  );
+  const state = await db.readState();
+  const bestByPlayer = new Map<string, { score: number; firstReachedAt: string }>();
+  for (const s of state.scores) {
+    if (!s.playerId) continue;
+    const cur = bestByPlayer.get(s.playerId);
+    if (!cur || s.score > cur.score || (s.score === cur.score && s.createdAt < cur.firstReachedAt)) {
+      bestByPlayer.set(s.playerId, { score: s.score, firstReachedAt: s.createdAt });
+    }
+  }
+  const ranked = [...bestByPlayer.entries()]
+    .map(([playerId, best]) => {
+      const p = state.players.find((x) => x.id === playerId);
+      if (!p) return null;
+      return {
+        playerId,
+        displayName: p.displayName,
+        favouriteClub: p.favouriteClub,
+        score: best.score,
+        firstReachedAt: best.firstReachedAt,
+      };
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null)
+    .sort((a, b) => (b.score - a.score) || a.firstReachedAt.localeCompare(b.firstReachedAt))
+    .slice(0, 5);
 
-  return result.rows.map((row, index) => ({
-    rank: index + 1,
-    playerId: row.player_id,
-    displayName: row.display_name,
-    favouriteClub: row.favourite_club,
-    score: Number(row.score),
+  return ranked.map((r, i) => ({
+    rank: i + 1,
+    playerId: r.playerId,
+    displayName: r.displayName,
+    favouriteClub: r.favouriteClub,
+    score: r.score,
   }));
 }
 
 export async function getPrizePot(db: DatabaseConnection): Promise<number> {
-  const result = await db.query('SELECT COALESCE(SUM(score), 0) AS prize_pot FROM scores');
-  return Number(result.rows[0].prize_pot);
+  const state = await db.readState();
+  return state.scores.reduce((sum, s) => sum + s.score, 0);
 }
 
 export async function getLatestResult(
   db: DatabaseConnection
 ): Promise<{ playerId: string | null; displayName: string; favouriteClub?: string; score: number; createdAt: string } | null> {
-  const result = await db.query(
-    `SELECT s.player_id, p.display_name, p.favourite_club, s.score, s.created_at
-     FROM scores s
-     LEFT JOIN players p ON p.id = s.player_id
-     ORDER BY s.created_at DESC
-     LIMIT 1`
-  );
-
-  const row = result.rows[0];
-  if (!row) return null;
-
-  if (!row.player_id) {
-    return {
-      playerId: null,
-      displayName: 'Anonym',
-      favouriteClub: '-',
-      score: Number(row.score),
-      createdAt: toIso(row.created_at),
-    };
+  const state = await db.readState();
+  if (state.scores.length === 0) return null;
+  const latest = [...state.scores].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  if (!latest) return null;
+  if (!latest.playerId) {
+    return { playerId: null, displayName: 'Anonym', favouriteClub: '-', score: latest.score, createdAt: latest.createdAt };
   }
-
+  const p = state.players.find((x) => x.id === latest.playerId);
   return {
-    playerId: row.player_id,
-    displayName: row.display_name ?? 'Okänd spelare',
-    favouriteClub: row.favourite_club ?? '-',
-    score: Number(row.score),
-    createdAt: toIso(row.created_at),
+    playerId: latest.playerId,
+    displayName: p?.displayName ?? 'Okänd spelare',
+    favouriteClub: p?.favouriteClub ?? '-',
+    score: latest.score,
+    createdAt: latest.createdAt,
   };
 }
 
 export async function getScoresExportRows(db: DatabaseConnection): Promise<
   Array<{ createdAt: string; displayName: string; favouriteClub: string; score: number; phone: string }>
 > {
-  const result = await db.query(
-    `SELECT s.created_at, p.display_name, p.favourite_club, p.phone, s.score
-     FROM scores s
-     LEFT JOIN players p ON p.id = s.player_id
-     ORDER BY s.created_at ASC`
-  );
-  return result.rows.map((row) => ({
-    createdAt: toIso(row.created_at),
-    displayName: row.display_name ?? 'Anonym',
-    favouriteClub: row.favourite_club ?? '-',
-    phone: row.phone ?? '-',
-    score: Number(row.score),
-  }));
-}
-
-function mapRowToPlayer(row: {
-  id: string;
-  display_name: string;
-  favourite_club: string;
-  phone: string | null;
-  email: string | null;
-  email_consent: boolean;
-  gdpr_consent: boolean;
-  created_at: string | Date;
-}): Player {
-  return {
-    id: row.id,
-    displayName: row.display_name,
-    favouriteClub: row.favourite_club,
-    phone: row.phone ?? undefined,
-    email: row.email ?? undefined,
-    emailConsent: !!row.email_consent,
-    gdprConsent: !!row.gdpr_consent,
-    createdAt: toIso(row.created_at),
-  };
-}
-
-function mapRowToScore(row: { id: string; player_id: string | null; score: number; created_at: string | Date }): ScoreRecord {
-  return {
-    id: row.id,
-    playerId: row.player_id ?? null,
-    score: Number(row.score),
-    createdAt: toIso(row.created_at),
-  };
-}
-
-function toIso(value: string | Date): string {
-  return new Date(value).toISOString();
+  const state = await db.readState();
+  return [...state.scores]
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map((s) => {
+      const p = s.playerId ? state.players.find((x) => x.id === s.playerId) : undefined;
+      return {
+        createdAt: s.createdAt,
+        displayName: p?.displayName ?? 'Anonym',
+        favouriteClub: p?.favouriteClub ?? '-',
+        phone: p?.phone ?? '-',
+        score: s.score,
+      };
+    });
 }
