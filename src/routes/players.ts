@@ -22,11 +22,12 @@ export function createPlayersRouter(
    */
   router.post('/', async (req: Request, res: Response) => {
     try {
-      const { displayName, favouriteClub, email, emailConsent, gdprConsent } = req.body;
+      const { displayName, favouriteClub, phone, email, emailConsent, gdprConsent } = req.body;
 
       const player = await service.registerPlayer({
         displayName,
         favouriteClub,
+        phone,
         email,
         emailConsent,
         gdprConsent,
