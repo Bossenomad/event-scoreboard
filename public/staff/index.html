@@ -3,212 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin</title>
+  <title>Admin Score</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #A20020;
       color: #fff;
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
+      display: grid;
+      place-items: center;
+      padding: 20px;
     }
-    .container { width: 100%; max-width: 760px; padding: 28px 22px 36px; }
-    header { text-align: center; margin-bottom: 24px; }
-    header h1 { font-size: 1.55rem; margin-bottom: 4px; }
-    header p { color: rgba(255,255,255,0.92); font-size: 0.98rem; }
     .panel {
-      background: #62001D;
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 10px;
-      padding: 18px;
-    }
-    .form-group { margin-bottom: 16px; }
-    label { display: block; margin-bottom: 8px; font-size: 0.95rem; font-weight: 700; }
-    input[type="text"], input[type="number"] {
       width: 100%;
-      padding: 13px 14px;
-      border: 2px solid rgba(255,255,255,0.28);
-      border-radius: 8px;
-      background: #FAF6F3;
-      color: #1B1918;
-      font-size: 1.02rem;
+      max-width: 520px;
+      background: #62001D;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 10px;
+      padding: 20px;
     }
-    input:focus { outline: none; border-color: #ED0000; }
-    input.error { border-color: #ED0000; }
-    .field-error { display: none; margin-top: 6px; color: #ffd1d9; font-size: 0.86rem; }
-    .field-error.visible { display: block; }
-    .btn-submit {
+    h1 { margin: 0 0 8px 0; font-size: 1.45rem; }
+    p { margin: 0 0 18px 0; color: rgba(255,255,255,0.9); }
+    label { display: block; margin-bottom: 8px; font-weight: 700; }
+    input {
       width: 100%;
       padding: 14px;
+      border-radius: 8px;
+      border: 2px solid rgba(255,255,255,0.3);
+      font-size: 1.1rem;
+      margin-bottom: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
       background: #ED0000;
       color: #fff;
-      border: 1px solid rgba(255,255,255,0.28);
-      border-radius: 8px;
       font-size: 1.05rem;
       font-weight: 700;
       cursor: pointer;
     }
-    .btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
-    .btn-secondary {
-      width: 100%;
-      padding: 14px;
-      background: transparent;
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.35);
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      margin-bottom: 10px;
-    }
-    .server-error {
-      display: none;
-      background: rgba(237,0,0,0.22);
-      border: 1px solid rgba(255,255,255,0.25);
-      color: #fff;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 14px;
-    }
-    .server-error.visible { display: block; }
-    #top5-message {
-      display: none;
-      background: rgba(250,246,243,0.12);
-      border: 1px solid rgba(255,255,255,0.28);
-      color: #fff;
-      padding: 11px 12px;
-      border-radius: 8px;
-      margin-bottom: 14px;
-      font-size: 0.95rem;
-    }
-    #top5-details { display: none; margin-bottom: 4px; }
-    .success-toast {
-      display: none;
-      position: fixed;
-      top: 22px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ED0000;
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.25);
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: 700;
-    }
-    .success-toast.visible { display: block; }
-    .success-toast.fade-out { opacity: 0; transition: opacity .3s; }
-    .flow-note {
-      margin-top: 16px;
-      font-size: 0.88rem;
-      color: rgba(255,255,255,0.9);
-      line-height: 1.4;
-      text-align: center;
-    }
-    .checkbox-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 14px;
-      font-size: 0.9rem;
-      line-height: 1.35;
-    }
-    .checkbox-row input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      margin-top: 2px;
-    }
-    .forget-panel {
-      margin-top: 16px;
-      border-top: 1px solid rgba(255,255,255,0.25);
-      padding-top: 14px;
-    }
-    .forget-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .forget-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-    }
-    .btn-forget {
-      padding: 12px 14px;
-      border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 8px;
-      background: transparent;
-      color: #fff;
-      font-weight: 700;
-      cursor: pointer;
-    }
+    .msg { margin-top: 12px; min-height: 20px; font-size: 0.95rem; }
+    .error { color: #ffd1d9; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>🏒 Admin: Registrera resultat</h1>
-      <p>Poäng registreras alltid direkt. Spelarinfo krävs bara vid topp 5.</p>
-    </header>
-
-    <div class="panel">
-      <form id="score-form" novalidate>
-        <div class="server-error" id="server-error" role="alert"></div>
-
-        <div class="form-group">
-          <label for="score-input">Poäng</label>
-          <input type="number" id="score-input" name="score" placeholder="Ange poäng" min="1" step="1" required inputmode="numeric">
-          <div class="field-error" id="score-error" role="alert"></div>
-        </div>
-
-        <div id="top5-message"></div>
-
-        <div id="top5-details">
-          <div class="form-group">
-            <label for="display-name-input">Namn</label>
-            <input type="text" id="display-name-input" name="displayName" placeholder="Förnamn" maxlength="50" autocomplete="name" list="player-name-suggestions">
-            <div class="field-error" id="displayName-error" role="alert"></div>
-          </div>
-          <div class="form-group">
-            <label for="favourite-club-input">Favoritförening</label>
-            <input type="text" id="favourite-club-input" name="favouriteClub" placeholder="t.ex. Frölunda HC" maxlength="100" list="club-suggestions">
-            <div class="field-error" id="favouriteClub-error" role="alert"></div>
-          </div>
-          <div class="form-group">
-            <label for="phone-input">Telefonnummer</label>
-            <input type="text" id="phone-input" name="phone" placeholder="07x xxx xx xx" maxlength="30" inputmode="tel">
-            <div class="field-error" id="phone-error" role="alert"></div>
-          </div>
-          <div class="checkbox-row">
-            <input type="checkbox" id="gdpr-consent-input" name="gdprConsent">
-            <label for="gdpr-consent-input" style="margin:0; font-weight:600;">
-              Jag bekräftar att spelaren har informerats om personuppgiftsbehandling enligt GDPR.
-            </label>
-          </div>
-          <div class="field-error" id="gdprConsent-error" role="alert"></div>
-          <button type="button" class="btn-secondary" id="back-to-step1-btn">Tillbaka</button>
-        </div>
-
-        <button type="submit" class="btn-submit" id="submit-btn">Registrera score</button>
-
-        <datalist id="player-name-suggestions"></datalist>
-        <datalist id="club-suggestions"></datalist>
-      </form>
-      <p class="flow-note">Steg 1: Lägg score. Steg 2 visas automatiskt om score hamnar i topplistan.</p>
-
-      <div class="forget-panel">
-        <div class="forget-title">Rätt att bli glömd</div>
-        <div class="forget-row">
-          <input type="text" id="forget-player-input" list="forget-player-suggestions" placeholder="Välj spelare att anonymisera">
-          <button type="button" class="btn-forget" id="forget-btn">Anonymisera</button>
-        </div>
-        <datalist id="forget-player-suggestions"></datalist>
-      </div>
-    </div>
-  </div>
-
-  <div class="success-toast" id="success-toast" role="status" aria-live="polite">✓ Sparat!</div>
+  <main class="panel">
+    <h1>🏒 Registrera score</h1>
+    <p>Systemet sparar endast poäng och uppdaterar prispotten.</p>
+    <form id="score-form">
+      <label for="score">Poäng</label>
+      <input id="score" name="score" type="number" min="1" step="1" placeholder="Ange poäng" required>
+      <button type="submit" id="submit-btn">Spara score</button>
+      <div class="msg" id="message" aria-live="polite"></div>
+    </form>
+  </main>
   <script src="/staff/app.js"></script>
 </body>
 </html>

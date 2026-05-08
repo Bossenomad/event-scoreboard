@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
 import type { DatabaseConnection } from '../db/database.js';
 import type { Player, PlayerRegistration, ScoreRecord, ScoreboardState } from '../types.js';
 import {
@@ -14,7 +13,6 @@ import {
   getLatestResult,
   getScoresExportRows,
   purgeOldPlayerData,
-  createPendingTopScore,
   consumePendingTopScore,
   deleteExpiredPendingTopScores,
 } from '../db/dataAccess.js';
@@ -83,12 +81,6 @@ export function createScoreboardService(db: DatabaseConnection) {
     ]);
   }
 
-  async function getCurrentThreshold(): Promise<number | null> {
-    const board = await getLeaderboard(db);
-    if (board.length < 5) return null;
-    return board[board.length - 1]?.score ?? null;
-  }
-
   return {
     async registerPlayer(data: PlayerRegistration): Promise<PlayerResponse> {
       await applyRetention();
@@ -129,17 +121,8 @@ export function createScoreboardService(db: DatabaseConnection) {
       if (!Number.isInteger(score) || score <= 0) {
         throw new ValidationError({ score: 'Poäng måste vara ett positivt heltal' });
       }
-      const thresholdScore = await getCurrentThreshold();
-      const qualifies = thresholdScore === null || score >= thresholdScore;
-      const scoreRow = await insertScore(db, { playerId: null, score });
-
-      if (!qualifies) {
-        return { qualifies: false, thresholdScore };
-      }
-
-      const token = uuidv4();
-      await createPendingTopScore(db, token, scoreRow.id, score);
-      return { qualifies: true, token, thresholdScore };
+      await insertScore(db, { playerId: null, score });
+      return { qualifies: false, thresholdScore: null };
     },
 
     async finalizeQualifiedScore(data: {
