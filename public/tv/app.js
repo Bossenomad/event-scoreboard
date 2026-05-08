@@ -28,7 +28,13 @@
   var pollTimer = null;
   var POLL_INTERVAL = 60000;
 
-  // --- Initialization (manual mode only) ---
+  var manualState = window.MANUAL_TV_STATE || {
+    prizePot: 0,
+    leaderboard: [],
+    latestResult: null
+  };
+
+  // --- Initialization ---
   applyFilePreviewScale();
   window.addEventListener('resize', applyFilePreviewScale);
   window.addEventListener('load', applyFilePreviewScale);
@@ -38,6 +44,7 @@
   setTimeout(applyFilePreviewScale, 50);
   setTimeout(applyFilePreviewScale, 250);
   startManualMode();
+  startPolling();
 
   // --- WebSocket connection ---
 
@@ -162,9 +169,9 @@
     }
     lastStateFingerprint = nextFingerprint;
 
-    var newPrizePot = typeof data.prizePot === 'number' ? data.prizePot : 0;
-    var newLeaderboard = Array.isArray(data.leaderboard) ? data.leaderboard : [];
-    var latestResult = data.latestResult || null;
+    var newPrizePot = typeof data.prizePot === 'number' ? data.prizePot : currentPrizePot;
+    var newLeaderboard = Array.isArray(manualState.leaderboard) ? manualState.leaderboard : [];
+    var latestResult = manualState.latestResult || null;
 
     // Animate prize pot if value changed
     if (newPrizePot !== currentPrizePot) {
@@ -334,11 +341,6 @@
   }
 
   function startManualMode() {
-    var manualState = window.MANUAL_TV_STATE || {
-      prizePot: 0,
-      leaderboard: [],
-      latestResult: null
-    };
     handleStateUpdate(manualState);
     statusText.textContent = 'Manuell';
     statusDot.className = 'status-dot';
