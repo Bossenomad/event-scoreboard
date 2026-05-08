@@ -67,6 +67,52 @@ export function createScoresRouter(
     }
   });
 
+  router.post('/scores/intake', async (req: Request, res: Response) => {
+    try {
+      const { score } = req.body;
+      const result = await service.intakeScore(score);
+      if (broadcastFn) {
+        broadcastFn();
+      }
+      res.status(200).json(result);
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        res.status(400).json({
+          error: 'Validation failed',
+          fields: err.errors,
+        });
+        return;
+      }
+      throw err;
+    }
+  });
+
+  router.post('/scores/finalize', async (req: Request, res: Response) => {
+    try {
+      const { token, displayName, favouriteClub, phone, gdprConsent } = req.body;
+      const result = await service.finalizeQualifiedScore({
+        token,
+        displayName,
+        favouriteClub,
+        phone,
+        gdprConsent,
+      });
+      if (broadcastFn) {
+        broadcastFn();
+      }
+      res.status(201).json(result);
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        res.status(400).json({
+          error: 'Validation failed',
+          fields: err.errors,
+        });
+        return;
+      }
+      throw err;
+    }
+  });
+
   /**
    * GET /scoreboard
    * Get current prize pot and leaderboard.

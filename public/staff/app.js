@@ -5,247 +5,220 @@
   var form = document.getElementById('score-form');
   var submitBtn = document.getElementById('submit-btn');
   var serverError = document.getElementById('server-error');
+  var scoreInput = document.getElementById('score-input');
   var displayNameInput = document.getElementById('display-name-input');
   var favouriteClubInput = document.getElementById('favourite-club-input');
-  var scoreInput = document.getElementById('score-input');
-  var exportCsvBtn = document.getElementById('export-csv-btn');
+  var phoneInput = document.getElementById('phone-input');
+  var gdprConsentInput = document.getElementById('gdpr-consent-input');
+  var top5Details = document.getElementById('top5-details');
+  var top5Message = document.getElementById('top5-message');
   var playerNameSuggestions = document.getElementById('player-name-suggestions');
   var clubSuggestions = document.getElementById('club-suggestions');
-
-  var confirmationOverlay = document.getElementById('confirmation-overlay');
-  var confirmPlayerName = document.getElementById('confirm-player-name');
-  var confirmPlayerClub = document.getElementById('confirm-player-club');
-  var confirmScore = document.getElementById('confirm-score');
-  var confirmBtn = document.getElementById('confirm-btn');
-  var cancelBtn = document.getElementById('cancel-btn');
-
+  var forgetPlayerInput = document.getElementById('forget-player-input');
+  var forgetSuggestions = document.getElementById('forget-player-suggestions');
+  var forgetBtn = document.getElementById('forget-btn');
   var successToast = document.getElementById('success-toast');
-  var qrImage = document.getElementById('qr-image');
-  var qrFallback = document.getElementById('qr-fallback');
 
-  var pendingSubmission = null;
-  var toastTimer = null;
+  var pendingToken = null;
+  var phase = 'intake';
   var knownPlayers = [];
   var playerClubByName = {};
+  var toastTimer = null;
 
   loadKnownPlayers();
-  loadQRCode();
 
-  displayNameInput.addEventListener('input', function () { clearFieldError('displayName'); });
-  favouriteClubInput.addEventListener('input', function () { clearFieldError('favouriteClub'); });
   scoreInput.addEventListener('input', function () { clearFieldError('score'); });
-  displayNameInput.addEventListener('input', autofillClubFromName);
-  displayNameInput.addEventListener('change', autofillClubFromName);
+  displayNameInput.addEventListener('input', function () {
+    clearFieldError('displayName');
+    autofillClubFromName();
+  });
+  favouriteClubInput.addEventListener('input', function () { clearFieldError('favouriteClub'); });
+  phoneInput.addEventListener('input', function () { clearFieldError('phone'); });
+  gdprConsentInput.addEventListener('change', function () { clearFieldError('gdprConsent'); });
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     hideServerError();
+    if (phase === 'intake') {
+      submitIntake();
+    } else {
+      submitFinalize();
+    }
+  });
 
-    var data = getFormData();
-    var errors = validateForm(data);
+  forgetBtn.addEventListener('click', function () {
+    hideServerError();
+    var raw = (forgetPlayerInput.value || '').trim();
+    var idMatch = raw.match(/\(([0-9a-fA-F-]{36})\)$/);
+    if (!idMatch) {
+      showServerError('Välj en spelare i listan för anonymisering.');
+      return;
+    }
+    forgetBtn.disabled = true;
+    fetch('/api/players/' + encodeURIComponent(idMatch[1]), { method: 'DELETE' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('Kunde inte anonymisera spelare.');
+        forgetPlayerInput.value = '';
+        loadKnownPlayers();
+        showSuccessToast('✓ Persondata borttagen, score behållen');
+      })
+      .catch(function (err) {
+        showServerError((err && err.message) || 'Kunde inte anonymisera spelare.');
+      })
+      .finally(function () {
+        forgetBtn.disabled = false;
+      });
+  });
+
+  function submitIntake() {
+    var score = parseInt(scoreInput.value, 10);
+    if (!Number.isInteger(score) || score <= 0) {
+      showFieldErrors({ score: 'Poäng måste vara ett positivt heltal' });
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Registrerar...';
+    fetch('/api/scores/intake', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ score: score }),
+    })
+      .then(parseJsonResult)
+      .then(function (result) {
+        if (!result.ok) throw toError(result, 'Kunde inte registrera score.');
+        if (!result.data.qualifies) {
+          showSuccessToast('✓ Sparat anonymt');
+          resetToIntake();
+          return;
+        }
+        pendingToken = result.data.token || null;
+        phase = 'finalize';
+        top5Details.style.display = 'block';
+        top5Message.style.display = 'block';
+        top5Message.textContent = 'Top 5! Fyll i namn, favoritförening, telefon och samtycke.';
+        submitBtn.textContent = 'Spara topp 5-spelare';
+        displayNameInput.focus();
+      })
+      .catch(handleError)
+      .finally(function () {
+        submitBtn.disabled = false;
+        if (phase === 'intake') submitBtn.textContent = 'Registrera score';
+      });
+  }
+
+  function submitFinalize() {
+    var payload = {
+      token: pendingToken,
+      displayName: (displayNameInput.value || '').trim(),
+      favouriteClub: (favouriteClubInput.value || '').trim(),
+      phone: (phoneInput.value || '').trim(),
+      gdprConsent: !!gdprConsentInput.checked,
+    };
+
+    var errors = {};
+    if (!payload.displayName) errors.displayName = 'Namn krävs';
+    if (!payload.favouriteClub) errors.favouriteClub = 'Favoritförening krävs';
+    if (!payload.phone) errors.phone = 'Telefonnummer krävs';
+    if (!payload.gdprConsent) errors.gdprConsent = 'Samtycke krävs';
+    if (!payload.token) errors.token = 'Registreringen har gått ut. Registrera score igen.';
     if (Object.keys(errors).length > 0) {
+      if (errors.token) showServerError(errors.token);
       showFieldErrors(errors);
       return;
     }
 
-    pendingSubmission = data;
-    showConfirmation(data);
-  });
-
-  confirmBtn.addEventListener('click', function () {
-    if (!pendingSubmission) return;
-
-    confirmBtn.disabled = true;
-    confirmBtn.textContent = 'Sparar…';
-    createPlayerAndScore(pendingSubmission)
-      .then(function () {
-        hideConfirmation();
-        showSuccessToast();
-        form.reset();
-      })
-      .catch(function (err) {
-        hideConfirmation();
-        if (err && err.fields) {
-          showFieldErrors(err.fields);
-        } else if (err && err.message) {
-          showServerError(err.message);
-        } else {
-          showServerError('Något gick fel. Försök igen.');
-        }
-      })
-      .finally(function () {
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Bekräfta';
-      });
-  });
-
-  cancelBtn.addEventListener('click', function () {
-    hideConfirmation();
-    submitBtn.focus();
-  });
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && confirmationOverlay.classList.contains('visible')) {
-      hideConfirmation();
-      submitBtn.focus();
-    }
-  });
-
-  exportCsvBtn.addEventListener('click', function () {
-    window.location.href = '/api/players/export/csv';
-  });
-
-  function getFormData() {
-    return {
-      displayName: (displayNameInput.value || '').trim(),
-      favouriteClub: (favouriteClubInput.value || '').trim(),
-      score: parseInt(scoreInput.value, 10)
-    };
-  }
-
-  function validateForm(data) {
-    var errors = {};
-
-    if (!data.displayName) {
-      errors.displayName = 'Namn krävs';
-    } else if (data.displayName.length > 50) {
-      errors.displayName = 'Namn får vara max 50 tecken';
-    }
-
-    if (!data.favouriteClub) {
-      errors.favouriteClub = 'Favoritlag krävs';
-    } else if (data.favouriteClub.length > 100) {
-      errors.favouriteClub = 'Favoritlag får vara max 100 tecken';
-    }
-
-    if (!Number.isInteger(data.score) || data.score <= 0) {
-      errors.score = 'Poäng måste vara ett positivt heltal';
-    }
-
-    return errors;
-  }
-
-  function createPlayerAndScore(data) {
-    return fetch('/api/players', {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sparar...';
+    fetch('/api/scores/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        displayName: data.displayName,
-        favouriteClub: data.favouriteClub,
-        gdprConsent: true
-      })
+      body: JSON.stringify(payload),
     })
-      .then(function (response) {
-        return response.json().then(function (json) {
-          return { ok: response.ok, status: response.status, data: json };
-        });
-      })
+      .then(parseJsonResult)
       .then(function (result) {
-        if (!result.ok) {
-          if (result.status === 400 && result.data && result.data.fields) {
-            throw { fields: result.data.fields };
-          }
-          throw { message: (result.data && result.data.error) || 'Kunde inte registrera spelare.' };
-        }
-        return result.data;
+        if (!result.ok) throw toError(result, 'Kunde inte spara topp 5-spelare.');
+        loadKnownPlayers();
+        showSuccessToast('✓ Topp 5 sparad');
+        resetToIntake();
       })
-      .then(function (player) {
-        return fetch('/api/scores', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ playerId: player.id, score: data.score })
-        });
-      })
-      .then(function (response) {
-        return response.json().then(function (json) {
-          return { ok: response.ok, status: response.status, data: json };
-        });
-      })
-      .then(function (result) {
-        if (!result.ok) {
-          if (result.status === 400 && result.data && result.data.fields) {
-            throw { fields: result.data.fields };
-          }
-          throw { message: (result.data && result.data.error) || 'Kunde inte spara poäng.' };
-        }
+      .catch(handleError)
+      .finally(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = phase === 'finalize' ? 'Spara topp 5-spelare' : 'Registrera score';
       });
   }
 
-  function showConfirmation(data) {
-    confirmPlayerName.textContent = data.displayName;
-    confirmPlayerClub.textContent = data.favouriteClub;
-    confirmScore.textContent = String(data.score);
-    confirmationOverlay.classList.add('visible');
-    confirmBtn.focus();
+  function toError(result, fallback) {
+    if (result.status === 400 && result.data && result.data.fields) return { fields: result.data.fields };
+    return { message: (result.data && result.data.error) || fallback };
   }
 
-  function hideConfirmation() {
-    confirmationOverlay.classList.remove('visible');
-    pendingSubmission = null;
+  function parseJsonResult(response) {
+    return response.text().then(function (text) {
+      var data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch (_e) {}
+      return { ok: response.ok, status: response.status, data: data };
+    });
   }
 
-  function showSuccessToast() {
-    if (toastTimer) {
-      clearTimeout(toastTimer);
+  function handleError(err) {
+    if (err && err.fields) {
+      showFieldErrors(err.fields);
+      return;
     }
-    successToast.classList.remove('fade-out');
-    successToast.classList.add('visible');
-    toastTimer = setTimeout(function () {
-      successToast.classList.add('fade-out');
-      setTimeout(function () {
-        successToast.classList.remove('visible');
-        successToast.classList.remove('fade-out');
-      }, 300);
-    }, 2000);
+    showServerError((err && err.message) || 'Något gick fel. Försök igen.');
+  }
+
+  function resetToIntake() {
+    phase = 'intake';
+    pendingToken = null;
+    form.reset();
+    top5Details.style.display = 'none';
+    top5Message.style.display = 'none';
+    top5Message.textContent = '';
+    clearAllFieldErrors();
+    submitBtn.textContent = 'Registrera score';
+    scoreInput.focus();
   }
 
   function showFieldErrors(errors) {
     clearAllFieldErrors();
-    var firstError = null;
-
-    for (var field in errors) {
-      if (!errors.hasOwnProperty(field)) continue;
-      var el = document.getElementById(field + '-error');
-      if (el) {
-        el.textContent = errors[field];
-        el.classList.add('visible');
-      }
-      var inputEl =
-        field === 'displayName' ? displayNameInput :
-        field === 'favouriteClub' ? favouriteClubInput :
-        field === 'score' ? scoreInput :
-        null;
-      if (inputEl) {
-        inputEl.classList.add('error');
-        if (!firstError) firstError = inputEl;
-      }
-    }
-
-    if (firstError) {
-      firstError.focus();
-    }
+    setFieldError('score', errors.score, scoreInput);
+    setFieldError('displayName', errors.displayName, displayNameInput);
+    setFieldError('favouriteClub', errors.favouriteClub, favouriteClubInput);
+    setFieldError('phone', errors.phone, phoneInput);
+    setFieldError('gdprConsent', errors.gdprConsent, null);
   }
 
-  function clearFieldError(fieldName) {
-    var errorEl = document.getElementById(fieldName + '-error');
-    if (errorEl) {
-      errorEl.textContent = '';
-      errorEl.classList.remove('visible');
+  function setFieldError(field, message, input) {
+    if (!message) return;
+    var el = document.getElementById(field + '-error');
+    if (el) {
+      el.textContent = message;
+      el.classList.add('visible');
     }
-    var inputEl =
-      fieldName === 'displayName' ? displayNameInput :
-      fieldName === 'favouriteClub' ? favouriteClubInput :
-      fieldName === 'score' ? scoreInput :
-      null;
-    if (inputEl) {
-      inputEl.classList.remove('error');
+    if (input) input.classList.add('error');
+  }
+
+  function clearFieldError(field) {
+    var el = document.getElementById(field + '-error');
+    if (el) {
+      el.textContent = '';
+      el.classList.remove('visible');
     }
+    if (field === 'score') scoreInput.classList.remove('error');
+    if (field === 'displayName') displayNameInput.classList.remove('error');
+    if (field === 'favouriteClub') favouriteClubInput.classList.remove('error');
+    if (field === 'phone') phoneInput.classList.remove('error');
   }
 
   function clearAllFieldErrors() {
+    clearFieldError('score');
     clearFieldError('displayName');
     clearFieldError('favouriteClub');
-    clearFieldError('score');
+    clearFieldError('phone');
+    clearFieldError('gdprConsent');
   }
 
   function showServerError(message) {
@@ -258,101 +231,73 @@
     serverError.classList.remove('visible');
   }
 
-  function loadQRCode() {
-    fetch('/api/qrcode')
-      .then(function (response) {
-        var contentType = response.headers.get('Content-Type') || '';
-        if (contentType.indexOf('image/svg+xml') !== -1) {
-          return response.text().then(function (svg) {
-            var encoded = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-            qrImage.src = encoded;
-            qrImage.style.display = 'block';
-            qrFallback.style.display = 'none';
-          });
-        }
-        return response.text().then(function (url) {
-          qrFallback.textContent = url;
-          qrFallback.style.display = 'block';
-          qrImage.style.display = 'none';
-        });
-      })
-      .catch(function () {
-        // Keep silent; QR is supportive
-      });
+  function showSuccessToast(message) {
+    if (toastTimer) clearTimeout(toastTimer);
+    successToast.textContent = message;
+    successToast.classList.remove('fade-out');
+    successToast.classList.add('visible');
+    toastTimer = setTimeout(function () {
+      successToast.classList.add('fade-out');
+      setTimeout(function () {
+        successToast.classList.remove('visible');
+        successToast.classList.remove('fade-out');
+      }, 300);
+    }, 1800);
   }
 
   function loadKnownPlayers() {
     fetch('/api/players')
-      .then(function (response) {
-        if (!response.ok) {
-          throw new Error('Failed to load players');
-        }
-        return response.json();
-      })
+      .then(function (response) { if (!response.ok) throw new Error('failed'); return response.json(); })
       .then(function (data) {
         knownPlayers = Array.isArray(data.players) ? data.players : [];
         buildSuggestions(knownPlayers);
       })
-      .catch(function () {
-        // Suggestions are optional
-      });
+      .catch(function () {});
   }
 
   function buildSuggestions(players) {
     playerClubByName = {};
     clearSuggestions(playerNameSuggestions);
     clearSuggestions(clubSuggestions);
-
-    var uniqueNames = {};
-    var uniqueClubs = {};
-
+    clearSuggestions(forgetSuggestions);
+    var names = {};
+    var clubs = {};
     for (var i = 0; i < players.length; i++) {
       var name = (players[i].displayName || '').trim();
       var club = (players[i].favouriteClub || '').trim();
-
-      if (name && !uniqueNames[name]) {
-        uniqueNames[name] = true;
+      if (name && !names[name]) {
+        names[name] = true;
         appendSuggestion(playerNameSuggestions, name);
       }
-      if (club && !uniqueClubs[club]) {
-        uniqueClubs[club] = true;
+      if (club && !clubs[club]) {
+        clubs[club] = true;
         appendSuggestion(clubSuggestions, club);
       }
       if (name && club && !playerClubByName[name]) {
         playerClubByName[name] = club;
       }
+      appendSuggestion(forgetSuggestions, name + ' (' + players[i].id + ')');
     }
   }
 
   function appendSuggestion(datalistEl, value) {
+    if (!datalistEl) return;
     var option = document.createElement('option');
     option.value = value;
     datalistEl.appendChild(option);
   }
 
   function clearSuggestions(datalistEl) {
-    while (datalistEl.firstChild) {
-      datalistEl.removeChild(datalistEl.firstChild);
-    }
+    if (!datalistEl) return;
+    while (datalistEl.firstChild) datalistEl.removeChild(datalistEl.firstChild);
   }
 
   function autofillClubFromName() {
     var name = (displayNameInput.value || '').trim();
     if (!name) return;
     var club = playerClubByName[name];
-    if (!club) {
-      // Prefix match fallback while typing
-      var lower = name.toLowerCase();
-      for (var i = 0; i < knownPlayers.length; i++) {
-        var candidateName = (knownPlayers[i].displayName || '').trim();
-        if (candidateName.toLowerCase().indexOf(lower) === 0) {
-          club = (knownPlayers[i].favouriteClub || '').trim();
-          if (club) break;
-        }
-      }
-    }
     if (!club) return;
-    if ((favouriteClubInput.value || '').trim().length > 0) return;
+    if ((favouriteClubInput.value || '').trim()) return;
     favouriteClubInput.value = club;
   }
 })();

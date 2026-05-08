@@ -5,372 +5,131 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin</title>
   <style>
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background: #f5f7fa;
-      color: #1a1a2e;
+      background: #A20020;
+      color: #fff;
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
     }
-
-    .container {
+    .container { width: 100%; max-width: 760px; padding: 28px 22px 36px; }
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 { font-size: 1.55rem; margin-bottom: 4px; }
+    header p { color: rgba(255,255,255,0.92); font-size: 0.98rem; }
+    .panel {
+      background: #62001D;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      padding: 18px;
+    }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 8px; font-size: 0.95rem; font-weight: 700; }
+    input[type="text"], input[type="number"] {
       width: 100%;
-      max-width: 720px;
-      padding: 32px 28px 48px;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-
-    header h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: #1a1a2e;
-      margin-bottom: 4px;
-    }
-
-    header p {
-      font-size: 1rem;
-      color: #555;
-    }
-
-    /* Layout: two-column on wider screens */
-    .main-layout {
-      display: flex;
-      gap: 32px;
-      align-items: flex-start;
-    }
-
-    .form-column {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .qr-column {
-      flex: 0 0 200px;
-      text-align: center;
-      padding: 16px;
-      background: #fff;
-      border: 1px solid #e0e0e0;
-      border-radius: 12px;
-    }
-
-    .qr-column h3 {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #444;
-      margin-bottom: 8px;
-    }
-
-    .qr-column img {
-      width: 160px;
-      height: 160px;
-    }
-
-    .qr-column .qr-fallback {
-      font-size: 0.8rem;
-      color: #666;
-      word-break: break-all;
-    }
-
-    @media (max-width: 640px) {
-      .main-layout {
-        flex-direction: column-reverse;
-      }
-
-      .qr-column {
-        flex: none;
-        width: 100%;
-      }
-    }
-
-    /* Form styles */
-    .form-group {
-      margin-bottom: 24px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 8px;
-    }
-
-    select,
-    input[type="text"],
-    input[type="number"] {
-      width: 100%;
-      padding: 14px 16px;
-      font-size: 1.1rem;
-      border: 2px solid #ddd;
+      padding: 13px 14px;
+      border: 2px solid rgba(255,255,255,0.28);
       border-radius: 8px;
-      background: #fff;
-      color: #1a1a2e;
-      transition: border-color 0.2s;
-      -webkit-appearance: none;
-      appearance: none;
+      background: #FAF6F3;
+      color: #1B1918;
+      font-size: 1.02rem;
     }
-
-    select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='2' fill='none'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 16px center;
-      padding-right: 40px;
-      cursor: pointer;
-    }
-
-    select:focus,
-    input[type="text"]:focus,
-    input[type="number"]:focus {
-      outline: none;
-      border-color: #4a6cf7;
-    }
-
-    select.error,
-    input[type="text"].error,
-    input[type="number"].error {
-      border-color: #e74c3c;
-    }
-
-    .field-error {
-      font-size: 0.85rem;
-      color: #e74c3c;
-      margin-top: 6px;
-      display: none;
-    }
-
-    .field-error.visible {
-      display: block;
-    }
-
-    /* Player list header with refresh button */
-    .player-label-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .player-label-row label {
-      margin-bottom: 0;
-    }
-
-    .btn-refresh {
-      padding: 6px 14px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #4a6cf7;
-      background: transparent;
-      border: 1px solid #4a6cf7;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-
-    .btn-refresh:hover {
-      background: #4a6cf7;
-      color: #fff;
-    }
-
-    .btn-refresh:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* Submit button — large touch target */
+    input:focus { outline: none; border-color: #ED0000; }
+    input.error { border-color: #ED0000; }
+    .field-error { display: none; margin-top: 6px; color: #ffd1d9; font-size: 0.86rem; }
+    .field-error.visible { display: block; }
     .btn-submit {
       width: 100%;
-      padding: 16px;
-      font-size: 1.15rem;
-      font-weight: 600;
+      padding: 14px;
+      background: #ED0000;
       color: #fff;
-      background: #4a6cf7;
-      border: none;
+      border: 1px solid rgba(255,255,255,0.28);
       border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 700;
       cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
-      -webkit-appearance: none;
-      appearance: none;
-      min-height: 52px;
     }
-
-    .btn-submit:hover {
-      background: #3b5de7;
-    }
-
-    .btn-submit:active {
-      background: #2f4fd6;
-    }
-
-    .btn-submit:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    /* Server error banner */
+    .btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
     .server-error {
       display: none;
-      padding: 14px 16px;
-      margin-bottom: 24px;
-      background: #fdecea;
-      color: #c0392b;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      border: 1px solid #f5c6cb;
-    }
-
-    .server-error.visible {
-      display: block;
-    }
-
-    /* Confirmation overlay */
-    .confirmation-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-
-    .confirmation-overlay.visible {
-      display: flex;
-    }
-
-    .confirmation-card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 36px 32px;
-      max-width: 440px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    }
-
-    .confirmation-card h2 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: #1a1a2e;
-      margin-bottom: 24px;
-    }
-
-    .confirmation-details {
-      background: #f5f7fa;
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 28px;
-    }
-
-    .confirmation-details .detail-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-    }
-
-    .confirmation-details .detail-row + .detail-row {
-      border-top: 1px solid #e0e0e0;
-    }
-
-    .confirmation-details .detail-label {
-      font-size: 0.9rem;
-      color: #777;
-    }
-
-    .confirmation-details .detail-value {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #1a1a2e;
-    }
-
-    .confirmation-buttons {
-      display: flex;
-      gap: 12px;
-    }
-
-    .btn-confirm,
-    .btn-cancel {
-      flex: 1;
-      padding: 14px;
-      font-size: 1.05rem;
-      font-weight: 600;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
-      min-height: 50px;
-    }
-
-    .btn-confirm {
-      background: #27ae60;
+      background: rgba(237,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.25);
       color: #fff;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 14px;
     }
-
-    .btn-confirm:hover {
-      background: #219a52;
+    .server-error.visible { display: block; }
+    #top5-message {
+      display: none;
+      background: rgba(250,246,243,0.12);
+      border: 1px solid rgba(255,255,255,0.28);
+      color: #fff;
+      padding: 11px 12px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      font-size: 0.95rem;
     }
-
-    .btn-confirm:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .btn-cancel {
-      background: #e0e0e0;
-      color: #333;
-    }
-
-    .btn-cancel:hover {
-      background: #d0d0d0;
-    }
-
-    /* Success toast */
+    #top5-details { display: none; margin-bottom: 4px; }
     .success-toast {
       display: none;
       position: fixed;
-      top: 24px;
+      top: 22px;
       left: 50%;
       transform: translateX(-50%);
-      background: #27ae60;
+      background: #ED0000;
       color: #fff;
-      padding: 14px 28px;
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 12px 20px;
       border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      z-index: 2000;
-      transition: opacity 0.3s;
+      font-weight: 700;
     }
-
-    .success-toast.visible {
-      display: block;
+    .success-toast.visible { display: block; }
+    .success-toast.fade-out { opacity: 0; transition: opacity .3s; }
+    .flow-note {
+      margin-top: 16px;
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.9);
+      line-height: 1.4;
+      text-align: center;
     }
-
-    .success-toast.fade-out {
-      opacity: 0;
+    .checkbox-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+      line-height: 1.35;
     }
-
-    /* Player count badge */
-    .player-count {
-      font-size: 0.8rem;
-      color: #888;
-      margin-top: 6px;
+    .checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+    }
+    .forget-panel {
+      margin-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.25);
+      padding-top: 14px;
+    }
+    .forget-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .forget-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+    .btn-forget {
+      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      background: transparent;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -378,77 +137,65 @@
   <div class="container">
     <header>
       <h1>🏒 Admin: Registrera resultat</h1>
-      <p>Fyll i namn, favoritlag och poäng</p>
+      <p>Poäng registreras alltid direkt. Spelarinfo krävs bara vid topp 5.</p>
     </header>
 
-    <div class="main-layout">
-      <div class="form-column">
-        <form id="score-form" novalidate>
-          <div class="server-error" id="server-error" role="alert"></div>
+    <div class="panel">
+      <form id="score-form" novalidate>
+        <div class="server-error" id="server-error" role="alert"></div>
 
+        <div class="form-group">
+          <label for="score-input">Poäng</label>
+          <input type="number" id="score-input" name="score" placeholder="Ange poäng" min="1" step="1" required inputmode="numeric">
+          <div class="field-error" id="score-error" role="alert"></div>
+        </div>
+
+        <div id="top5-message"></div>
+
+        <div id="top5-details">
           <div class="form-group">
-            <label for="display-name-input">För- och efternamn</label>
-            <input type="text" id="display-name-input" name="displayName" placeholder="Förnamn Efternamn" maxlength="50" required autocomplete="name" list="player-name-suggestions">
+            <label for="display-name-input">Namn</label>
+            <input type="text" id="display-name-input" name="displayName" placeholder="Förnamn" maxlength="50" autocomplete="name" list="player-name-suggestions">
             <div class="field-error" id="displayName-error" role="alert"></div>
           </div>
-
           <div class="form-group">
-            <label for="favourite-club-input">Favoritlag</label>
-            <input type="text" id="favourite-club-input" name="favouriteClub" placeholder="t.ex. Frölunda HC" maxlength="100" required list="club-suggestions">
+            <label for="favourite-club-input">Favoritförening</label>
+            <input type="text" id="favourite-club-input" name="favouriteClub" placeholder="t.ex. Frölunda HC" maxlength="100" list="club-suggestions">
             <div class="field-error" id="favouriteClub-error" role="alert"></div>
           </div>
-
           <div class="form-group">
-            <label for="score-input">Poäng</label>
-            <input type="number" id="score-input" name="score" placeholder="Ange poäng" min="1" step="1" required inputmode="numeric">
-            <div class="field-error" id="score-error" role="alert"></div>
+            <label for="phone-input">Telefonnummer</label>
+            <input type="text" id="phone-input" name="phone" placeholder="07x xxx xx xx" maxlength="30" inputmode="tel">
+            <div class="field-error" id="phone-error" role="alert"></div>
           </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="gdpr-consent-input" name="gdprConsent">
+            <label for="gdpr-consent-input" style="margin:0; font-weight:600;">
+              Jag bekräftar att spelaren har informerats om personuppgiftsbehandling enligt GDPR.
+            </label>
+          </div>
+          <div class="field-error" id="gdprConsent-error" role="alert"></div>
+        </div>
 
-          <button type="submit" class="btn-submit" id="submit-btn">Registrera och spara resultat</button>
-          <button type="button" class="btn-submit" id="export-csv-btn" style="margin-top:12px; background:#334466;">Exportera CSV</button>
+        <button type="submit" class="btn-submit" id="submit-btn">Registrera score</button>
 
-          <datalist id="player-name-suggestions"></datalist>
-          <datalist id="club-suggestions"></datalist>
-        </form>
-      </div>
+        <datalist id="player-name-suggestions"></datalist>
+        <datalist id="club-suggestions"></datalist>
+      </form>
+      <p class="flow-note">Steg 1: Lägg score. Steg 2 visas automatiskt om score hamnar i topplistan.</p>
 
-      <div class="qr-column">
-        <h3>Spelarregistrering</h3>
-        <img id="qr-image" src="" alt="QR code for player registration" style="display:none;">
-        <div id="qr-fallback" class="qr-fallback" style="display:none;"></div>
-        <p style="font-size:0.75rem; color:#888; margin-top:8px;">Visa för spelare för registrering</p>
+      <div class="forget-panel">
+        <div class="forget-title">Rätt att bli glömd</div>
+        <div class="forget-row">
+          <input type="text" id="forget-player-input" list="forget-player-suggestions" placeholder="Välj spelare att anonymisera">
+          <button type="button" class="btn-forget" id="forget-btn">Anonymisera</button>
+        </div>
+        <datalist id="forget-player-suggestions"></datalist>
       </div>
     </div>
   </div>
 
-  <!-- Confirmation overlay -->
-  <div class="confirmation-overlay" id="confirmation-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-heading">
-    <div class="confirmation-card">
-      <h2 id="confirm-heading">Bekräfta registrering</h2>
-      <div class="confirmation-details">
-        <div class="detail-row">
-          <span class="detail-label">Spelare</span>
-          <span class="detail-value" id="confirm-player-name"></span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Favoritlag</span>
-          <span class="detail-value" id="confirm-player-club"></span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Poäng</span>
-          <span class="detail-value" id="confirm-score"></span>
-        </div>
-      </div>
-      <div class="confirmation-buttons">
-        <button type="button" class="btn-cancel" id="cancel-btn">Avbryt</button>
-        <button type="button" class="btn-confirm" id="confirm-btn">Bekräfta</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Success toast -->
   <div class="success-toast" id="success-toast" role="status" aria-live="polite">✓ Sparat!</div>
-
   <script src="app.js"></script>
 </body>
 </html>
