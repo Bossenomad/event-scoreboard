@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=1920">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Topplistan</title>
   <style>
     @font-face {
@@ -55,7 +55,7 @@
     }
 
     :root {
-      --viewport-pad: 16px;
+      --viewport-pad: 0px;
       --tv-scale: 1;
       --tv-safe-scale: 0.94;
     }
@@ -100,16 +100,18 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: var(--viewport-pad);
-      overflow-x: auto;
-      overflow-y: hidden;
+      padding: 0;
+      overflow: hidden;
     }
 
     .tv-preview {
-      width: calc(1920px * var(--tv-scale));
-      height: calc(1080px * var(--tv-scale));
-      flex: 0 0 auto;
+      width: 100vw;
+      height: 100vh;
       position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
     }
 
     .tv-canvas {
@@ -121,11 +123,9 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      position: absolute;
-      top: 0;
-      left: 0;
+      position: relative;
       transform: scale(var(--tv-scale));
-      transform-origin: top left;
+      transform-origin: center center;
       animation: fadeIn 0.8s ease-out;
     }
 
