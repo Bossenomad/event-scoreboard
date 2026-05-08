@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { LocalDatabase } from '../db/database.js';
+import type { DatabaseConnection } from '../db/database.js';
 import type { Player, PlayerRegistration, ScoreRecord, ScoreboardState } from '../types.js';
 import {
   insertPlayer,
@@ -14,6 +14,9 @@ import {
   getLatestResult,
   getScoresExportRows,
   purgeOldPlayerData,
+  createPendingTopScore,
+  consumePendingTopScore,
+  deleteExpiredPendingTopScores,
 } from '../db/dataAccess.js';
 
 export class ValidationError extends Error {
@@ -31,13 +34,6 @@ export class PlayerNotFoundError extends Error {
     super(`Player not found: ${playerId}`);
     this.name = 'PlayerNotFoundError';
   }
-}
-
-interface PendingTopScore {
-  token: string;
-  score: number;
-  scoreId: string;
-  createdAt: string;
 }
 
 export interface PlayerResponse {
@@ -76,12 +72,15 @@ function validateBasicPlayerInput(data: { displayName?: string; favouriteClub?: 
   }
 }
 
-export function createScoreboardService(db: LocalDatabase) {
-  const pendingTopScores = new Map<string, PendingTopScore>();
+export function createScoreboardService(db: DatabaseConnection) {
   const retentionDays = Math.max(parseInt(process.env.GDPR_RETENTION_DAYS || '30', 10) || 30, 1);
+  const pendingTokenTtlMinutes = Math.max(parseInt(process.env.PENDING_TOP_TOKEN_TTL_MINUTES || '30', 10) || 30, 1);
 
   async function applyRetention(): Promise<void> {
-    await purgeOldPlayerData(db, retentionDays);
+    await Promise.all([
+      purgeOldPlayerData(db, retentionDays),
+      deleteExpiredPendingTopScores(db, pendingTokenTtlMinutes),
+    ]);
   }
 
   async function getCurrentThreshold(): Promise<number | null> {
@@ -139,12 +138,7 @@ export function createScoreboardService(db: LocalDatabase) {
       }
 
       const token = uuidv4();
-      pendingTopScores.set(token, {
-        token,
-        score,
-        scoreId: scoreRow.id,
-        createdAt: new Date().toISOString(),
-      });
+      await createPendingTopScore(db, token, scoreRow.id, score);
       return { qualifies: true, token, thresholdScore };
     },
 
@@ -156,7 +150,7 @@ export function createScoreboardService(db: LocalDatabase) {
       gdprConsent?: boolean;
     }): Promise<{ player: PlayerResponse; score: ScoreRecord }> {
       await applyRetention();
-      const pending = pendingTopScores.get(data.token);
+      const pending = await consumePendingTopScore(db, data.token);
       if (!pending) {
         throw new ValidationError({ token: 'Registreringen har gått ut. Registrera score igen.' });
       }
@@ -173,7 +167,6 @@ export function createScoreboardService(db: LocalDatabase) {
         gdprConsent: true,
       });
       const score = await attachScoreToPlayer(db, pending.scoreId, player.id);
-      pendingTopScores.delete(data.token);
       if (!score) {
         throw new ValidationError({ token: 'Poängraden kunde inte hittas. Registrera score igen.' });
       }

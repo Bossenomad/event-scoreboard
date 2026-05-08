@@ -12,6 +12,7 @@
   var gdprConsentInput = document.getElementById('gdpr-consent-input');
   var top5Details = document.getElementById('top5-details');
   var top5Message = document.getElementById('top5-message');
+  var backToStep1Btn = document.getElementById('back-to-step1-btn');
   var playerNameSuggestions = document.getElementById('player-name-suggestions');
   var clubSuggestions = document.getElementById('club-suggestions');
   var forgetPlayerInput = document.getElementById('forget-player-input');
@@ -45,6 +46,12 @@
       submitFinalize();
     }
   });
+
+  if (backToStep1Btn) {
+    backToStep1Btn.addEventListener('click', function () {
+      resetToIntake();
+    });
+  }
 
   forgetBtn.addEventListener('click', function () {
     hideServerError();
