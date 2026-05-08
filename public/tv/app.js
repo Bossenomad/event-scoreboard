@@ -28,20 +28,16 @@
   var pollTimer = null;
   var POLL_INTERVAL = 60000;
 
-  // --- Initialization ---
-  if (location.protocol === 'file:') {
-    applyFilePreviewScale();
-    window.addEventListener('resize', applyFilePreviewScale);
-    window.addEventListener('load', applyFilePreviewScale);
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(applyFilePreviewScale);
-    }
-    setTimeout(applyFilePreviewScale, 50);
-    setTimeout(applyFilePreviewScale, 250);
-    startMockPreview();
-  } else {
-    connectWebSocket();
+  // --- Initialization (manual mode only) ---
+  applyFilePreviewScale();
+  window.addEventListener('resize', applyFilePreviewScale);
+  window.addEventListener('load', applyFilePreviewScale);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(applyFilePreviewScale);
   }
+  setTimeout(applyFilePreviewScale, 50);
+  setTimeout(applyFilePreviewScale, 250);
+  startManualMode();
 
   // --- WebSocket connection ---
 
@@ -337,29 +333,15 @@
     return parts[0] + ' ' + parts[1].charAt(0).toUpperCase();
   }
 
-  function startMockPreview() {
-    setConnectionStatus('polling');
-
-    var mockState = {
-      prizePot: 3560,
-      leaderboard: [
-        { playerId: 'p1', displayName: 'Göran Lind', favouriteClub: 'RÖGLE', score: 47 },
-        { playerId: 'p2', displayName: 'Åke Gustavsson', favouriteClub: 'BJÖRKLÖVEN', score: 45 },
-        { playerId: 'p3', displayName: 'Birgitta Johansson', favouriteClub: 'BRYNÄS', score: 38 },
-        { playerId: 'p4', displayName: 'Börje Holm', favouriteClub: 'HV71', score: 33 },
-        { playerId: 'p5', displayName: 'Annika Zetterberg', favouriteClub: 'FÄRJESTAD', score: 31 }
-      ],
-      latestResult: {
-        playerId: 'p1',
-        displayName: 'Göran Lind',
-        favouriteClub: 'RÖGLE',
-        score: 27,
-        createdAt: new Date().toISOString()
-      }
+  function startManualMode() {
+    var manualState = window.MANUAL_TV_STATE || {
+      prizePot: 0,
+      leaderboard: [],
+      latestResult: null
     };
-
-    handleStateUpdate(mockState);
-    statusText.textContent = 'Förhandsvisning';
+    handleStateUpdate(manualState);
+    statusText.textContent = 'Manuell';
+    statusDot.className = 'status-dot';
   }
 
   function applyFilePreviewScale() {
