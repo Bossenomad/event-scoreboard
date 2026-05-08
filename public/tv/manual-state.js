@@ -1,5 +1,5 @@
 window.MANUAL_TV_STATE = {
-  prizePot: 188,
+  prizePot: 3456,
   leaderboard: [
     { playerId: 'p1', displayName: 'Rasmus Pilebo', favouriteClub: 'Helsingborg HC', score: 42 },
     { playerId: 'p2', displayName: 'Joakim', favouriteClub: 'Bollnäs IS', score: 40 },
