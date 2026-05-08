@@ -15,9 +15,11 @@ export interface LocalDatabase {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_PATH = process.env.VERCEL
-  ? '/tmp/scoreboard.json'
-  : path.join(__dirname, '..', '..', 'data', 'scoreboard.json');
+const DATA_PATH =
+  process.env.SCOREBOARD_DATA_PATH ||
+  (process.env.VERCEL
+    ? '/tmp/scoreboard.json'
+    : path.join(__dirname, '..', '..', 'data', 'scoreboard.json'));
 
 let database: LocalDatabase | null = null;
 let queue: Promise<void> = Promise.resolve();

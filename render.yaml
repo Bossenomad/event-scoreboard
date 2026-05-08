@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: event-scoreboard
+    env: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: GDPR_RETENTION_DAYS
+        value: 30
+      - key: SCOREBOARD_DATA_PATH
+        value: /var/data/scoreboard.json
+    disk:
+      name: scoreboard-data
+      mountPath: /var/data
+      sizeGB: 1
