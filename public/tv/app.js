@@ -44,7 +44,6 @@
   setTimeout(applyFilePreviewScale, 50);
   setTimeout(applyFilePreviewScale, 250);
   startManualMode();
-  startPolling();
 
   // --- WebSocket connection ---
 
@@ -170,8 +169,8 @@
     lastStateFingerprint = nextFingerprint;
 
     var newPrizePot = typeof data.prizePot === 'number' ? data.prizePot : currentPrizePot;
-    var newLeaderboard = Array.isArray(manualState.leaderboard) ? manualState.leaderboard : [];
-    var latestResult = manualState.latestResult || null;
+    var newLeaderboard = Array.isArray(data.leaderboard) ? data.leaderboard : [];
+    var latestResult = data.latestResult || null;
 
     // Animate prize pot if value changed
     if (newPrizePot !== currentPrizePot) {
@@ -341,7 +340,11 @@
   }
 
   function startManualMode() {
-    handleStateUpdate(manualState);
+    handleStateUpdate({
+      prizePot: manualState.prizePot || 0,
+      leaderboard: Array.isArray(manualState.leaderboard) ? manualState.leaderboard : [],
+      latestResult: manualState.latestResult || null
+    });
     statusText.textContent = 'Manuell';
     statusDot.className = 'status-dot';
   }
