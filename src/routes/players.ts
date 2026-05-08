@@ -86,11 +86,12 @@ export function createPlayersRouter(
   router.put('/:id', async (req: Request, res: Response) => {
     try {
       const id = req.params.id as string;
-      const { displayName, favouriteClub } = req.body;
+      const { displayName, favouriteClub, phone } = req.body;
 
       const player = await service.updatePlayer(id, {
         displayName,
         favouriteClub,
+        phone,
       });
 
       if (broadcastFn) {

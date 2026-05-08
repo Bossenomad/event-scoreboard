@@ -2,7 +2,7 @@ import express from 'express';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Pool } from 'pg';
+import type { LocalDatabase } from './db/database.js';
 import { getDatabase } from './db/database.js';
 import { createScoreboardService } from './services/scoreboardService.js';
 import { createPlayersRouter } from './routes/players.js';
@@ -47,7 +47,7 @@ export function createApp() {
 }
 
 const server = http.createServer(app);
-let db: Pool;
+let db: LocalDatabase;
 
 // Generate QR code at startup and mount the route
 async function startServer() {
