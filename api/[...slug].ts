@@ -19,8 +19,11 @@ async function ensureInitialized() {
   const db = await getDatabase();
   const service = createScoreboardService(db);
 
+  // Support both prefixed (/api/*) and stripped (*) paths depending on Vercel routing shape.
   app.use('/api/players', createPlayersRouter(service));
+  app.use('/players', createPlayersRouter(service));
   app.use('/api', createScoresRouter(service));
+  app.use('/', createScoresRouter(service));
 
   const baseUrl =
     process.env.BASE_URL ||
@@ -35,6 +38,7 @@ async function ensureInitialized() {
   const qrCodeSvg = await generateQRCode(resolvedBaseUrl);
 
   app.use('/api/qrcode', createQRCodeRouter(qrCodeSvg, registrationUrl));
+  app.use('/qrcode', createQRCodeRouter(qrCodeSvg, registrationUrl));
   initialized = true;
 }
 
