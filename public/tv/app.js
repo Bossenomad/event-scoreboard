@@ -42,14 +42,19 @@
   var GROWTH_INTERVAL_MS = 4 * 60 * 1000;
 
   // --- Initialization ---
-  applyFilePreviewScale();
-  window.addEventListener('resize', applyFilePreviewScale);
-  window.addEventListener('load', applyFilePreviewScale);
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(applyFilePreviewScale);
+  if (location.protocol === 'file:') {
+    applyFilePreviewScale();
+    window.addEventListener('resize', applyFilePreviewScale);
+    window.addEventListener('load', applyFilePreviewScale);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(applyFilePreviewScale);
+    }
+    setTimeout(applyFilePreviewScale, 50);
+    setTimeout(applyFilePreviewScale, 250);
+  } else {
+    // On deployed /tv we render at full canvas size to fill the screen.
+    document.documentElement.style.setProperty('--tv-scale', '1');
   }
-  setTimeout(applyFilePreviewScale, 50);
-  setTimeout(applyFilePreviewScale, 250);
   startManualMode();
   startLocalMode();
 
