@@ -14,13 +14,13 @@
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
   var staticState = {
-    prizePotSek: 3802,
+    prizePotSek: 4876,
     topPlayers: [
       { rank: 1, name: 'Peter O', favoriteClub: 'RBK', score: 53 },
       { rank: 2, name: 'Victor', favoriteClub: 'RBK T14', score: 52 },
       { rank: 3, name: 'William L', favoriteClub: 'Varberg Vipers', score: 52 },
-      { rank: 4, name: 'Daniel L', favoriteClub: 'Harryda HC', score: 49 },
-      { rank: 5, name: 'Fredrik', favoriteClub: 'Djurgarden IF', score: 49 }
+      { rank: 4, name: 'Martin', favoriteClub: 'Borås HC', score: 50 },
+      { rank: 5, name: 'Daniel L', favoriteClub: 'Harryda HC', score: 49 }
     ]
   };
 
@@ -59,7 +59,7 @@
       return;
     }
 
-    var add = randomInt(10, 55);
+    var add = randomInt(10, 50);
     var current = loadLocalAdded();
     var next = current + add;
     writeLocalAdded(next);
