@@ -9,6 +9,7 @@
   var LOCAL_KEY = 'event_scoreboard_blaze_added_total';
   var GROWTH_LAST_RUN_KEY = 'event_scoreboard_blaze_growth_last_run';
   var GROWTH_INTERVAL_MS = 4 * 60 * 1000;
+  var fitTick = null;
   var potEl = document.getElementById('pot');
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
@@ -22,6 +23,15 @@
       { rank: 5, name: 'Fredrik', favoriteClub: 'Djurgarden IF', score: 49 }
     ]
   };
+
+  applyFitScale();
+  window.addEventListener('resize', applyFitScale);
+  window.addEventListener('load', applyFitScale);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(applyFitScale);
+  }
+  setTimeout(applyFitScale, 50);
+  setTimeout(applyFitScale, 250);
 
   renderStaticState();
   applyPeriodicGrowth();
@@ -152,5 +162,38 @@
 
   function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function applyFitScale() {
+    var canvas = document.querySelector('.canvas');
+    if (!canvas) return;
+
+    if (fitTick) {
+      cancelAnimationFrame(fitTick);
+    }
+
+    fitTick = requestAnimationFrame(function () {
+      fitTick = null;
+      var viewportW = Math.max(window.innerWidth, 1);
+      var viewportH = Math.max(window.innerHeight, 1);
+
+      // Canvas is rotated 90deg, so rendered bounds are swapped.
+      var baseW = 1080;
+      var baseH = 1920;
+      var rotatedW = baseH;
+      var rotatedH = baseW;
+
+      var scaleByW = viewportW / rotatedW;
+      var scaleByH = viewportH / rotatedH;
+      var scale = Math.min(scaleByW, scaleByH);
+      // Keep safe margins on TVs (avoid edge clipping / overscan).
+      scale = scale * 0.78;
+
+      if (!isFinite(scale) || scale <= 0) {
+        scale = 1;
+      }
+
+      canvas.style.setProperty('--blaze-fit-scale', String(scale));
+    });
   }
 })();
