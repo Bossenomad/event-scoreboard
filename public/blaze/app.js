@@ -4,27 +4,23 @@
   var potEl = document.getElementById('pot');
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
-  var pollMs = 2000;
+  var staticState = {
+    prizePotSek: 3802,
+    topPlayers: [
+      { rank: 1, name: 'Peter O', favoriteClub: 'RBK', score: 53 },
+      { rank: 2, name: 'Victor', favoriteClub: 'RBK T14', score: 52 },
+      { rank: 3, name: 'William L', favoriteClub: 'Varberg Vipers', score: 52 },
+      { rank: 4, name: 'Daniel L', favoriteClub: 'Harryda HC', score: 49 },
+      { rank: 5, name: 'Fredrik', favoriteClub: 'Djurgarden IF', score: 49 }
+    ]
+  };
 
-  fetchState();
-  setInterval(fetchState, pollMs);
+  renderStaticState();
 
-  function fetchState() {
-    fetch('https://are-leaderboard.vercel.app/api/leaderboard')
-      .then(function (response) {
-        if (!response.ok) throw new Error('HTTP ' + response.status);
-        return response.json();
-      })
-      .then(function (state) {
-        var prizePot = Number(state.prizePotSek) || 0;
-        var leaderboard = Array.isArray(state.topPlayers) ? state.topPlayers : [];
-        potEl.textContent = prizePot.toLocaleString('sv-SE');
-        renderRows(leaderboard);
-        updatedAtEl.textContent = formatUpdatedAt(state.lastUpdatedAt);
-      })
-      .catch(function () {
-        // Keep previous values on temporary fetch error.
-      });
+  function renderStaticState() {
+    potEl.textContent = Number(staticState.prizePotSek || 0).toLocaleString('sv-SE');
+    renderRows(staticState.topPlayers || []);
+    updatedAtEl.textContent = 'Fast data';
   }
 
   function renderRows(items) {
@@ -44,21 +40,9 @@
       row.innerHTML =
         '<span>#' + (i + 1) + '</span>' +
         '<span>' + escapeHtml(entry.name || ('Spelare ' + (i + 1))) + '</span>' +
+        '<span>' + escapeHtml(entry.favoriteClub || '-') + '</span>' +
         '<span class="score">' + (Number(entry.score) || 0).toLocaleString('sv-SE') + '</span>';
       rowsEl.appendChild(row);
-    }
-  }
-
-  function formatUpdatedAt(iso) {
-    if (!iso) return 'Väntar på uppdatering...';
-    try {
-      return 'Uppdaterad ' + new Date(iso).toLocaleTimeString('sv-SE', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-    } catch (_err) {
-      return 'Uppdaterad';
     }
   }
 
