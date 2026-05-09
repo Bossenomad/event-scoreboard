@@ -41,6 +41,12 @@
       transform-origin: center center;
     }
     .title { text-transform: uppercase; letter-spacing: 2px; font-size: 2.35rem; font-weight: 800; text-align: center; }
+    .hero-icon {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      margin: 0 auto 4px auto;
+    }
     .pot { text-align: center; font-size: 9.74rem; font-weight: 900; line-height: 1; }
     .sub { text-align: center; text-transform: uppercase; letter-spacing: 1px; font-size: 1.88rem; font-weight: 800; }
     .divider { height: 2px; background: rgba(255,255,255,.3); margin-top: 4px; }
@@ -103,8 +109,9 @@
 <body>
   <div class="viewport">
     <main class="canvas">
+      <img class="hero-icon" src="/blaze/hand-icon.png" alt="" aria-hidden="true">
       <div class="title">Tillsammans har vi samlat in</div>
-      <div class="pot"><span id="pot">4 876</span> kr</div>
+      <div class="pot"><span id="pot">5 376</span> kr</div>
       <div class="sub">till vinnarens favoritförening</div>
       <div class="divider"></div>
       <div class="table-title">Topplistan</div>
@@ -123,6 +130,6 @@
       </footer>
     </main>
   </div>
-  <script src="/blaze/app.js?v=20260509-localfix1"></script>
+  <script src="/blaze/app.js?v=20260509-blazesync1"></script>
 </body>
 </html>

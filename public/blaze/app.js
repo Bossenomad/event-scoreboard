@@ -8,13 +8,13 @@
 
   var LOCAL_KEY = 'event_scoreboard_blaze_added_total';
   var GROWTH_LAST_RUN_KEY = 'event_scoreboard_blaze_growth_last_run';
-  var GROWTH_INTERVAL_MS = 4 * 60 * 1000;
+  var GROWTH_INTERVAL_MS = 3 * 60 * 1000;
   var fitTick = null;
   var potEl = document.getElementById('pot');
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
   var staticState = {
-    prizePotSek: 4876,
+    prizePotSek: 5376,
     topPlayers: [
       { rank: 1, name: 'Peter O', favoriteClub: 'RBK', score: 53 },
       { rank: 2, name: 'Victor', favoriteClub: 'RBK T14', score: 52 },

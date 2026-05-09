@@ -39,7 +39,7 @@
   var prizePotStorageKey = 'event_scoreboard_tv_prize_pot';
   var addedScoreStorageKey = 'event_scoreboard_tv_added_total';
   var growthLastRunKey = 'event_scoreboard_tv_growth_last_run';
-  var GROWTH_INTERVAL_MS = 4 * 60 * 1000;
+  var GROWTH_INTERVAL_MS = 5 * 60 * 1000;
 
   // --- Initialization ---
   if (location.protocol === 'file:') {
@@ -381,7 +381,7 @@
       return;
     }
 
-    var add = randomInt(10, 55);
+    var add = randomInt(10, 50);
     var current = loadAddedScore();
     var next = current + add;
     writeAddedScore(next);
