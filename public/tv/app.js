@@ -413,8 +413,21 @@
       var value = parseInt(localStorage.getItem(addedScoreStorageKey) || '0', 10);
       return Number.isFinite(value) && value > 0 ? value : 0;
     } catch (_err) {
-      return 0;
+      return readCookieAddedScore();
     }
+  }
+
+  function readCookieAddedScore() {
+    var name = addedScoreStorageKey + '=';
+    var parts = document.cookie ? document.cookie.split(';') : [];
+    for (var i = 0; i < parts.length; i++) {
+      var part = parts[i].trim();
+      if (part.indexOf(name) === 0) {
+        var n = parseInt(decodeURIComponent(part.substring(name.length)), 10);
+        return Number.isFinite(n) && n > 0 ? n : 0;
+      }
+    }
+    return 0;
   }
 
 })();
