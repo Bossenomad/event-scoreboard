@@ -2,6 +2,11 @@
 (function () {
   'use strict';
 
+  if (location.protocol === 'file:') {
+    location.replace('https://event-scoreboard.vercel.app/tv/');
+    return;
+  }
+
   // --- DOM elements ---
   var prizeValueEl = document.getElementById('prize-value');
   var leaderboardBody = document.getElementById('leaderboard-body');

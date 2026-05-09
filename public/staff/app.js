@@ -1,6 +1,11 @@
 (function () {
   'use strict';
 
+  if (location.protocol === 'file:') {
+    location.replace('https://event-scoreboard.vercel.app/staff');
+    return;
+  }
+
   var LOCAL_KEY = 'event_scoreboard_tv_added_total';
   var form = document.getElementById('score-form');
   var scoreInput = document.getElementById('score');

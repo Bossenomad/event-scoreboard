@@ -1,6 +1,11 @@
 (function () {
   'use strict';
 
+  if (location.protocol === 'file:') {
+    location.replace('https://event-scoreboard.vercel.app/blaze');
+    return;
+  }
+
   var LOCAL_KEY = 'event_scoreboard_blaze_added_total';
   var potEl = document.getElementById('pot');
   var rowsEl = document.getElementById('rows');
