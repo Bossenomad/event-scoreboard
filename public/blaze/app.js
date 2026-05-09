@@ -1,7 +1,6 @@
 (function () {
   'use strict';
 
-  var LOCAL_KEY = 'blaze_local_added_total';
   var potEl = document.getElementById('pot');
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
@@ -22,23 +21,20 @@
   setInterval(fetchDynamicTotal, pollMs);
 
   function renderStaticState() {
-    var added = getLocalAddedTotal();
-    var total = Number(staticState.prizePotSek || 0) + added;
-    potEl.textContent = total.toLocaleString('sv-SE');
+    potEl.textContent = Number(staticState.prizePotSek || 0).toLocaleString('sv-SE');
     renderRows(staticState.topPlayers || []);
-    updatedAtEl.textContent = added > 0 ? ('Fast data + ' + added.toLocaleString('sv-SE')) : 'Fast data';
+    updatedAtEl.textContent = 'Fast data + live score';
   }
 
   function fetchDynamicTotal() {
-    fetch('/api/blaze/scoreboard')
+    fetch('/api/scoreboard')
       .then(function (response) {
         if (!response.ok) throw new Error('HTTP ' + response.status);
         return response.json();
       })
       .then(function (state) {
         var backendTotal = Number(state.prizePot) || 0;
-        var localAdded = getLocalAddedTotal();
-        var total = Number(staticState.prizePotSek || 0) + Math.max(backendTotal, localAdded);
+        var total = Number(staticState.prizePotSek || 0) + backendTotal;
         potEl.textContent = total.toLocaleString('sv-SE');
         updatedAtEl.textContent = 'Fast data + live score';
       })
@@ -77,14 +73,5 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
-  }
-
-  function getLocalAddedTotal() {
-    try {
-      var value = parseInt(localStorage.getItem(LOCAL_KEY) || '0', 10);
-      return Number.isFinite(value) && value > 0 ? value : 0;
-    } catch (_err) {
-      return 0;
-    }
   }
 })();
