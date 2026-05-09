@@ -55,15 +55,25 @@
   function applyPeriodicGrowth() {
     var now = Date.now();
     var lastRun = readGrowthLastRun();
-    if (lastRun > 0 && now - lastRun < GROWTH_INTERVAL_MS) {
+
+    // First run bootstraps the timer without adding immediately.
+    if (lastRun <= 0) {
+      writeGrowthLastRun(now);
       return;
     }
 
-    var add = randomInt(10, 50);
+    var elapsed = now - lastRun;
+    if (elapsed < GROWTH_INTERVAL_MS) return;
+
+    // Catch up if tab was sleeping/backgrounded.
+    var steps = Math.floor(elapsed / GROWTH_INTERVAL_MS);
     var current = loadLocalAdded();
-    var next = current + add;
-    writeLocalAdded(next);
-    writeGrowthLastRun(now);
+    var totalAdd = 0;
+    for (var i = 0; i < steps; i++) {
+      totalAdd += randomInt(10, 50);
+    }
+    writeLocalAdded(current + totalAdd);
+    writeGrowthLastRun(lastRun + (steps * GROWTH_INTERVAL_MS));
   }
 
   function renderRows(items) {
