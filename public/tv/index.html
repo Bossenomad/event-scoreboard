@@ -360,65 +360,6 @@
       letter-spacing: 2px;
     }
 
-    .latest-section {
-      margin: 8px 0 0 0;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .latest-title {
-      font-size: 1.5rem;
-      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 4px;
-      color: #ffffff;
-      margin-bottom: 14px;
-    }
-
-    .latest-table {
-      width: calc(100% - 18px);
-      padding-right: 18px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .latest-row {
-      display: grid;
-      grid-template-columns: minmax(0, 0.35fr) minmax(0, 1.45fr) minmax(0, 1.45fr) minmax(0, 0.75fr);
-      align-items: center;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: #62001D;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      width: 100%;
-      overflow: hidden;
-    }
-
-    .latest-row .col-name,
-    .latest-row .col-club,
-    .latest-row .col-score {
-      color: #fff;
-    }
-
-    .latest-player,
-    .latest-club {
-      font-size: 1.25rem;
-      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
-      font-weight: 700;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .latest-score {
-      font-size: 1.25rem;
-      font-family: 'SvenskaSpelArena', 'SvenskaSpelPlan', sans-serif;
-      color: #ffffff;
-      font-weight: 700;
-    }
 
     /* Connection status indicator */
     .connection-status {
@@ -479,24 +420,6 @@
       </div>
     </div>
   </section>
-  <section class="latest-section" aria-label="Senaste resultat">
-    <div class="latest-title">Senaste spelare</div>
-    <div class="latest-table" role="table" aria-label="Senaste spelare">
-      <div class="lb-header" role="row">
-        <span class="col-rank" role="columnheader"></span>
-        <span class="col-name" role="columnheader">Namn</span>
-        <span class="col-club" role="columnheader">Lag</span>
-        <span class="col-score" role="columnheader">Poäng</span>
-      </div>
-      <div class="latest-row" role="row">
-        <span class="col-rank" role="cell"></span>
-        <span class="col-name latest-player" id="latest-player">-</span>
-        <span class="col-club latest-club" id="latest-club">-</span>
-        <span class="col-score latest-score" id="latest-score">0</span>
-      </div>
-    </div>
-  </section>
-
   <div class="connection-status" aria-hidden="true">
     <span class="status-dot" id="status-dot"></span>
     <span id="status-text">Connected</span>

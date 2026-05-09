@@ -8,9 +8,6 @@
   var leaderboardEmpty = document.getElementById('leaderboard-empty');
   var statusDot = document.getElementById('status-dot');
   var statusText = document.getElementById('status-text');
-  var latestPlayerEl = document.getElementById('latest-player');
-  var latestClubEl = document.getElementById('latest-club');
-  var latestScoreEl = document.getElementById('latest-score');
 
   // --- State ---
   var currentPrizePot = 0;
@@ -195,7 +192,6 @@
       }
     }
     var newLeaderboard = Array.isArray(data.leaderboard) ? data.leaderboard : [];
-    var latestResult = data.latestResult || null;
 
     // Animate prize pot if value changed
     if (newPrizePot !== currentPrizePot) {
@@ -204,8 +200,6 @@
 
     // Update leaderboard with animations
     updateLeaderboard(newLeaderboard);
-    updateLatestResult(latestResult);
-
     currentPrizePot = newPrizePot;
     currentLeaderboard = newLeaderboard;
     savePrizePot(currentPrizePot);
@@ -326,31 +320,6 @@
     row.appendChild(scoreEl);
 
     return row;
-  }
-
-  function updateLatestResult(latestResult) {
-    if (!latestResult) {
-      latestPlayerEl.textContent = '-';
-      latestClubEl.textContent = '-';
-      latestScoreEl.textContent = '0';
-      return;
-    }
-
-    latestPlayerEl.textContent = formatDisplayNameForTv(latestResult.displayName || '');
-    latestClubEl.textContent = getLatestClub(latestResult);
-    latestScoreEl.textContent = formatNumber(latestResult.score || 0);
-  }
-
-  function getLatestClub(latestResult) {
-    if (latestResult.favouriteClub) {
-      return latestResult.favouriteClub;
-    }
-    for (var i = 0; i < currentLeaderboard.length; i++) {
-      if (currentLeaderboard[i].playerId === latestResult.playerId) {
-        return currentLeaderboard[i].favouriteClub || '-';
-      }
-    }
-    return '-';
   }
 
   function formatDisplayNameForTv(displayName) {
