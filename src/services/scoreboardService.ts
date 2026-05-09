@@ -118,8 +118,8 @@ export function createScoreboardService(db: DatabaseConnection) {
 
     async intakeScore(score: number): Promise<{ qualifies: boolean; token?: string; thresholdScore: number | null }> {
       await applyRetention();
-      if (!Number.isInteger(score) || score <= 0 || score > 70) {
-        throw new ValidationError({ score: 'Poäng måste vara ett heltal mellan 1 och 70' });
+      if (!Number.isInteger(score) || score <= 0 || score > 100) {
+        throw new ValidationError({ score: 'Poäng måste vara ett heltal mellan 1 och 100' });
       }
       await insertScore(db, { playerId: null, score });
       return { qualifies: false, thresholdScore: null };

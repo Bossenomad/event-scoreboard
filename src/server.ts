@@ -7,6 +7,7 @@ import { getDatabase } from './db/database.js';
 import { createScoreboardService } from './services/scoreboardService.js';
 import { createPlayersRouter } from './routes/players.js';
 import { createScoresRouter } from './routes/scores.js';
+import { createBlazeRouter } from './routes/blaze.js';
 import { setupWebSocket } from './services/websocketServer.js';
 import { generateQRCode, getRegistrationUrl } from './services/qrCodeService.js';
 import { createQRCodeRouter } from './routes/qrcode.js';
@@ -32,6 +33,8 @@ app.use('/staff', express.static(path.join(publicDir, 'staff')));
 
 // Serve TV display at /tv
 app.use('/tv', express.static(path.join(publicDir, 'tv')));
+app.use('/reg', express.static(path.join(publicDir, 'reg')));
+app.use('/blaze', express.static(path.join(publicDir, 'blaze')));
 
 // Root route -> TV display
 app.get('/', (_req, res) => {
@@ -61,6 +64,7 @@ async function startServer() {
 
   app.use('/api/players', createPlayersRouter(service, () => broadcastFn()));
   app.use('/api', createScoresRouter(service, () => broadcastFn()));
+  app.use('/api', createBlazeRouter());
 
   const broadcast = setupWebSocket(server, service);
   setBroadcastFn(broadcast);
