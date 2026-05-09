@@ -34,6 +34,7 @@
     latestResult: null
   };
   var manualBasePrizePot = Number(manualState.prizePot) || 0;
+  var prizePotStorageKey = 'event_scoreboard_tv_prize_pot';
 
   // --- Initialization ---
   applyFilePreviewScale();
@@ -145,10 +146,15 @@
         var newPrizePot = currentPrizePot;
         if (typeof data.prizePot === 'number') {
           newPrizePot = manualBasePrizePot + data.prizePot;
+          var savedPrizePot = loadSavedPrizePot();
+          if (savedPrizePot > newPrizePot) {
+            newPrizePot = savedPrizePot;
+          }
         }
         if (newPrizePot !== currentPrizePot) {
           animatePrizePot(currentPrizePot, newPrizePot);
           currentPrizePot = newPrizePot;
+          savePrizePot(currentPrizePot);
         }
       })
       .catch(function (err) {
@@ -180,7 +186,14 @@
     }
     lastStateFingerprint = nextFingerprint;
 
-    var newPrizePot = typeof data.prizePot === 'number' ? data.prizePot : currentPrizePot;
+    var newPrizePot = currentPrizePot;
+    if (typeof data.prizePot === 'number') {
+      newPrizePot = manualBasePrizePot + data.prizePot;
+      var savedPrizePot = loadSavedPrizePot();
+      if (savedPrizePot > newPrizePot) {
+        newPrizePot = savedPrizePot;
+      }
+    }
     var newLeaderboard = Array.isArray(data.leaderboard) ? data.leaderboard : [];
     var latestResult = data.latestResult || null;
 
@@ -195,6 +208,7 @@
 
     currentPrizePot = newPrizePot;
     currentLeaderboard = newLeaderboard;
+    savePrizePot(currentPrizePot);
   }
 
   // --- Prize pot count-up animation ---
@@ -352,8 +366,9 @@
   }
 
   function startManualMode() {
+    var startingPrizePot = Math.max(manualBasePrizePot, loadSavedPrizePot());
     handleStateUpdate({
-      prizePot: manualState.prizePot || 0,
+      prizePot: startingPrizePot - manualBasePrizePot,
       leaderboard: Array.isArray(manualState.leaderboard) ? manualState.leaderboard : [],
       latestResult: manualState.latestResult || null
     });
@@ -384,6 +399,24 @@
     }
 
     document.documentElement.style.setProperty('--tv-scale', String(scale));
+  }
+
+  function loadSavedPrizePot() {
+    try {
+      var value = localStorage.getItem(prizePotStorageKey);
+      var parsed = parseInt(value || '0', 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+    } catch (_err) {
+      return 0;
+    }
+  }
+
+  function savePrizePot(value) {
+    try {
+      localStorage.setItem(prizePotStorageKey, String(Math.max(0, Math.round(value))));
+    } catch (_err) {
+      // ignore storage write failures
+    }
   }
 
 })();
