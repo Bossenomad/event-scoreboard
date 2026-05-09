@@ -43,7 +43,9 @@
   function renderStaticState() {
     potEl.textContent = Number(staticState.prizePotSek || 0).toLocaleString('sv-SE');
     renderRows(staticState.topPlayers || []);
-    updatedAtEl.textContent = 'Fast data + lokala score';
+    if (updatedAtEl) {
+      updatedAtEl.textContent = 'Fast data + lokala score';
+    }
   }
 
   function syncLocalPrizePot() {
