@@ -1,11 +1,10 @@
 (function () {
   'use strict';
 
-  var API_BASE = location.protocol === 'file:' ? 'https://event-scoreboard.vercel.app' : '';
+  var LOCAL_KEY = 'event_scoreboard_blaze_added_total';
   var potEl = document.getElementById('pot');
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
-  var pollMs = 2000;
   var staticState = {
     prizePotSek: 3802,
     topPlayers: [
@@ -18,30 +17,20 @@
   };
 
   renderStaticState();
-  fetchDynamicTotal();
-  setInterval(fetchDynamicTotal, pollMs);
+  syncLocalPrizePot();
+  setInterval(syncLocalPrizePot, 1000);
+  window.addEventListener('storage', syncLocalPrizePot);
 
   function renderStaticState() {
     potEl.textContent = Number(staticState.prizePotSek || 0).toLocaleString('sv-SE');
     renderRows(staticState.topPlayers || []);
-    updatedAtEl.textContent = 'Fast data + live score';
+    updatedAtEl.textContent = 'Fast data + lokala score';
   }
 
-  function fetchDynamicTotal() {
-    fetch(API_BASE + '/api/scoreboard')
-      .then(function (response) {
-        if (!response.ok) throw new Error('HTTP ' + response.status);
-        return response.json();
-      })
-      .then(function (state) {
-        var backendTotal = Number(state.prizePot) || 0;
-        var total = Number(staticState.prizePotSek || 0) + backendTotal;
-        potEl.textContent = total.toLocaleString('sv-SE');
-        updatedAtEl.textContent = 'Fast data + live score';
-      })
-      .catch(function () {
-        // Keep static/local fallback
-      });
+  function syncLocalPrizePot() {
+    var localAdded = loadLocalAdded();
+    var total = Number(staticState.prizePotSek || 0) + localAdded;
+    potEl.textContent = total.toLocaleString('sv-SE');
   }
 
   function renderRows(items) {
@@ -74,5 +63,14 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  function loadLocalAdded() {
+    try {
+      var value = parseInt(localStorage.getItem(LOCAL_KEY) || '0', 10);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    } catch (_err) {
+      return 0;
+    }
   }
 })();

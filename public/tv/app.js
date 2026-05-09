@@ -32,6 +32,7 @@
   };
   var manualBasePrizePot = Number(manualState.prizePot) || 0;
   var prizePotStorageKey = 'event_scoreboard_tv_prize_pot';
+  var addedScoreStorageKey = 'event_scoreboard_tv_added_total';
 
   // --- Initialization ---
   applyFilePreviewScale();
@@ -43,9 +44,7 @@
   setTimeout(applyFilePreviewScale, 50);
   setTimeout(applyFilePreviewScale, 250);
   startManualMode();
-  if (location.protocol !== 'file:') {
-    startPolling();
-  }
+  startLocalMode();
 
   // --- WebSocket connection ---
 
@@ -333,14 +332,32 @@
   }
 
   function startManualMode() {
-    var startingPrizePot = Math.max(manualBasePrizePot, loadSavedPrizePot());
+    var localAdded = loadAddedScore();
+    var startingPrizePot = Math.max(manualBasePrizePot + localAdded, loadSavedPrizePot());
     handleStateUpdate({
       prizePot: startingPrizePot - manualBasePrizePot,
       leaderboard: Array.isArray(manualState.leaderboard) ? manualState.leaderboard : [],
       latestResult: manualState.latestResult || null
     });
-    statusText.textContent = 'Manuell';
+    statusText.textContent = 'Lokal';
     statusDot.className = 'status-dot';
+  }
+
+  function startLocalMode() {
+    setConnectionStatus('connected');
+    syncLocalPrizePot();
+    setInterval(syncLocalPrizePot, 1000);
+    window.addEventListener('storage', syncLocalPrizePot);
+  }
+
+  function syncLocalPrizePot() {
+    var localAdded = loadAddedScore();
+    var target = manualBasePrizePot + localAdded;
+    if (target !== currentPrizePot) {
+      animatePrizePot(currentPrizePot, target);
+      currentPrizePot = target;
+      savePrizePot(currentPrizePot);
+    }
   }
 
   function applyFilePreviewScale() {
@@ -383,6 +400,15 @@
       localStorage.setItem(prizePotStorageKey, String(Math.max(0, Math.round(value))));
     } catch (_err) {
       // ignore storage write failures
+    }
+  }
+
+  function loadAddedScore() {
+    try {
+      var value = parseInt(localStorage.getItem(addedScoreStorageKey) || '0', 10);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    } catch (_err) {
+      return 0;
     }
   }
 
