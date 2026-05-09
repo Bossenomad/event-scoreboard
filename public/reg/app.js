@@ -1,6 +1,7 @@
 (function () {
   'use strict';
 
+  var LOCAL_KEY = 'blaze_local_added_total';
   var form = document.getElementById('score-form');
   var scoreInput = document.getElementById('score');
   var submitBtn = document.getElementById('submit-btn');
@@ -18,32 +19,27 @@
     submitBtn.textContent = 'Sparar...';
     showMessage('');
 
-    fetch('/api/blaze/intake', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ score: score }),
-    })
-      .then(function (response) {
-        if (!response.ok) throw new Error('Kunde inte spara score.');
-        return response.json();
-      })
-      .then(function () {
-        scoreInput.value = '';
-        showMessage('✓ Score sparad');
-        scoreInput.focus();
-      })
-      .catch(function (err) {
-        showMessage(err.message || 'Något gick fel.', true);
-      })
-      .finally(function () {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Spara score';
-      });
+    addLocalScore(score);
+
+    scoreInput.value = '';
+    showMessage('✓ Score sparad');
+    scoreInput.focus();
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Spara score';
   });
+
+  function addLocalScore(score) {
+    try {
+      var current = parseInt(localStorage.getItem(LOCAL_KEY) || '0', 10);
+      if (!Number.isFinite(current)) current = 0;
+      localStorage.setItem(LOCAL_KEY, String(current + score));
+    } catch (_err) {
+      // ignore storage issues
+    }
+  }
 
   function showMessage(text, isError) {
     messageEl.textContent = text || '';
     messageEl.className = isError ? 'msg error' : 'msg';
   }
 })();
-

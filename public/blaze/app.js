@@ -1,6 +1,7 @@
 (function () {
   'use strict';
 
+  var LOCAL_KEY = 'blaze_local_added_total';
   var potEl = document.getElementById('pot');
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
@@ -18,9 +19,11 @@
   renderStaticState();
 
   function renderStaticState() {
-    potEl.textContent = Number(staticState.prizePotSek || 0).toLocaleString('sv-SE');
+    var added = getLocalAddedTotal();
+    var total = Number(staticState.prizePotSek || 0) + added;
+    potEl.textContent = total.toLocaleString('sv-SE');
     renderRows(staticState.topPlayers || []);
-    updatedAtEl.textContent = 'Fast data';
+    updatedAtEl.textContent = added > 0 ? ('Fast data + ' + added.toLocaleString('sv-SE')) : 'Fast data';
   }
 
   function renderRows(items) {
@@ -53,5 +56,14 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  function getLocalAddedTotal() {
+    try {
+      var value = parseInt(localStorage.getItem(LOCAL_KEY) || '0', 10);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    } catch (_err) {
+      return 0;
+    }
   }
 })();
