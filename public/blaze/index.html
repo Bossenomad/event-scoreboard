@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Blaze TV</title>
+  <title>Topplistan Blaze</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -19,17 +19,17 @@
       width: min(100vw, 177.78vh);
       aspect-ratio: 16 / 9;
       background: #A20020;
-      padding: 40px 56px;
+      padding: 36px 56px 24px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 18px;
     }
-    .title { text-transform: uppercase; letter-spacing: 3px; font-size: 1.8rem; font-weight: 800; text-align: center; }
-    .pot { text-align: center; font-size: 6rem; font-weight: 900; line-height: 1; }
-    .sub { text-align: center; text-transform: uppercase; letter-spacing: 2px; font-size: 1.2rem; }
+    .title { text-transform: uppercase; letter-spacing: 3px; font-size: 1.6rem; font-weight: 800; text-align: center; }
+    .pot { text-align: center; font-size: 6.5rem; font-weight: 900; line-height: 1; }
+    .sub { text-align: center; text-transform: uppercase; letter-spacing: 2px; font-size: 1.25rem; font-weight: 800; }
     .divider { height: 2px; background: rgba(255,255,255,.3); }
-    .table-title { text-transform: uppercase; letter-spacing: 3px; font-size: 2rem; font-weight: 800; text-align: center; }
+    .table-title { text-transform: uppercase; letter-spacing: 3px; font-size: 2.1rem; font-weight: 900; text-align: center; }
     .head, .row {
       display: grid;
       grid-template-columns: 120px 1fr 220px;
@@ -48,21 +48,39 @@
     }
     .row.top { background: #ED0000; }
     .score { text-align: right; }
+    .footer {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      color: rgba(255,255,255,.9);
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+    .logo {
+      height: 42px;
+      width: auto;
+      object-fit: contain;
+    }
   </style>
 </head>
 <body>
   <main class="canvas">
-    <div class="title">Blaze Prispott</div>
+    <div class="title">Tillsammans har vi samlat in</div>
     <div class="pot"><span id="pot">0</span> kr</div>
-    <div class="sub">Separat från ordinarie tv/staff</div>
+    <div class="sub">till vinnarens favoritförening</div>
     <div class="divider"></div>
     <div class="table-title">Topplistan</div>
     <div class="head">
-      <span>Plac.</span><span>Namn</span><span class="score">Poäng</span>
+      <span></span><span>Namn</span><span class="score">Poäng</span>
     </div>
     <div class="rows" id="rows"></div>
+    <footer class="footer">
+      <span id="updated-at">Laddar...</span>
+      <img class="logo" src="https://are-leaderboard.vercel.app/assests/ski-team-sweden-stolt-sponsor.png" alt="Ski Team Sweden">
+    </footer>
   </main>
-  <script src="/blaze/app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
-

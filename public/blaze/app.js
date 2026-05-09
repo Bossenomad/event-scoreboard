@@ -3,22 +3,24 @@
 
   var potEl = document.getElementById('pot');
   var rowsEl = document.getElementById('rows');
+  var updatedAtEl = document.getElementById('updated-at');
   var pollMs = 2000;
 
   fetchState();
   setInterval(fetchState, pollMs);
 
   function fetchState() {
-    fetch('/api/blaze/scoreboard')
+    fetch('https://are-leaderboard.vercel.app/api/leaderboard')
       .then(function (response) {
         if (!response.ok) throw new Error('HTTP ' + response.status);
         return response.json();
       })
       .then(function (state) {
-        var prizePot = Number(state.prizePot) || 0;
-        var leaderboard = Array.isArray(state.leaderboard) ? state.leaderboard : [];
+        var prizePot = Number(state.prizePotSek) || 0;
+        var leaderboard = Array.isArray(state.topPlayers) ? state.topPlayers : [];
         potEl.textContent = prizePot.toLocaleString('sv-SE');
         renderRows(leaderboard);
+        updatedAtEl.textContent = formatUpdatedAt(state.lastUpdatedAt);
       })
       .catch(function () {
         // Keep previous values on temporary fetch error.
@@ -41,9 +43,22 @@
       row.className = 'row' + (i === 0 ? ' top' : '');
       row.innerHTML =
         '<span>#' + (i + 1) + '</span>' +
-        '<span>' + escapeHtml(entry.displayName || ('Spelare ' + (i + 1))) + '</span>' +
+        '<span>' + escapeHtml(entry.name || ('Spelare ' + (i + 1))) + '</span>' +
         '<span class="score">' + (Number(entry.score) || 0).toLocaleString('sv-SE') + '</span>';
       rowsEl.appendChild(row);
+    }
+  }
+
+  function formatUpdatedAt(iso) {
+    if (!iso) return 'Väntar på uppdatering...';
+    try {
+      return 'Uppdaterad ' + new Date(iso).toLocaleTimeString('sv-SE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+    } catch (_err) {
+      return 'Uppdaterad';
     }
   }
 
@@ -56,4 +71,3 @@
       .replace(/'/g, '&#039;');
   }
 })();
-
