@@ -1,6 +1,7 @@
 (function () {
   'use strict';
 
+  var API_BASE = location.protocol === 'file:' ? 'https://event-scoreboard.vercel.app' : '';
   var form = document.getElementById('score-form');
   var scoreInput = document.getElementById('score');
   var submitBtn = document.getElementById('submit-btn');
@@ -18,7 +19,7 @@
     submitBtn.textContent = 'Sparar...';
     showMessage('');
 
-    fetch('/api/scores/intake', {
+    fetch(API_BASE + '/api/scores/intake', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ score: score }),

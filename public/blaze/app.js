@@ -1,6 +1,7 @@
 (function () {
   'use strict';
 
+  var API_BASE = location.protocol === 'file:' ? 'https://event-scoreboard.vercel.app' : '';
   var potEl = document.getElementById('pot');
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
@@ -27,7 +28,7 @@
   }
 
   function fetchDynamicTotal() {
-    fetch('/api/scoreboard')
+    fetch(API_BASE + '/api/scoreboard')
       .then(function (response) {
         if (!response.ok) throw new Error('HTTP ' + response.status);
         return response.json();
