@@ -44,7 +44,6 @@
   setTimeout(applyFilePreviewScale, 250);
   startManualMode();
   if (location.protocol !== 'file:') {
-    connectWebSocket();
     startPolling();
   }
 
@@ -72,7 +71,6 @@
     ws.onopen = function () {
       reconnectAttempts = 0;
       setConnectionStatus('connected');
-      stopPolling();
     };
 
     ws.onmessage = function (event) {
