@@ -153,10 +153,13 @@
     }
 
     .prize-icon {
-      width: 960px;
-      height: 960px;
+      width: 320px;
+      height: 320px;
+      display: block;
       object-fit: contain;
-      margin-bottom: 10px;
+      transform: scale(1.8);
+      transform-origin: center center;
+      margin-bottom: 60px;
     }
 
     .prize-label {
@@ -403,7 +406,7 @@
   <main class="tv-canvas">
   <div class="tv-stage">
   <section class="prize-section" aria-label="Prize pot">
-    <img class="prize-icon" src="/tv/hand-icon.png" alt="" aria-hidden="true">
+    <img class="prize-icon" src="/tv/hand-icon.png?v=20260509-iconboost1" alt="" aria-hidden="true">
     <div class="prize-label">Tillsammans har vi samlat in</div>
     <div class="prize-value" aria-live="polite">
       <span id="prize-value">0</span>
