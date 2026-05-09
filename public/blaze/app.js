@@ -5,6 +5,7 @@
   var potEl = document.getElementById('pot');
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
+  var pollMs = 2000;
   var staticState = {
     prizePotSek: 3802,
     topPlayers: [
@@ -17,6 +18,8 @@
   };
 
   renderStaticState();
+  fetchDynamicTotal();
+  setInterval(fetchDynamicTotal, pollMs);
 
   function renderStaticState() {
     var added = getLocalAddedTotal();
@@ -24,6 +27,24 @@
     potEl.textContent = total.toLocaleString('sv-SE');
     renderRows(staticState.topPlayers || []);
     updatedAtEl.textContent = added > 0 ? ('Fast data + ' + added.toLocaleString('sv-SE')) : 'Fast data';
+  }
+
+  function fetchDynamicTotal() {
+    fetch('/api/blaze/scoreboard')
+      .then(function (response) {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.json();
+      })
+      .then(function (state) {
+        var backendTotal = Number(state.prizePot) || 0;
+        var localAdded = getLocalAddedTotal();
+        var total = Number(staticState.prizePotSek || 0) + Math.max(backendTotal, localAdded);
+        potEl.textContent = total.toLocaleString('sv-SE');
+        updatedAtEl.textContent = 'Fast data + live score';
+      })
+      .catch(function () {
+        // Keep static/local fallback
+      });
   }
 
   function renderRows(items) {

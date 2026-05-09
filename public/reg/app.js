@@ -19,13 +19,32 @@
     submitBtn.textContent = 'Sparar...';
     showMessage('');
 
-    addLocalScore(score);
-
-    scoreInput.value = '';
-    showMessage('✓ Score sparad');
-    scoreInput.focus();
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Spara score';
+    fetch('/api/blaze/intake', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ score: score }),
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error('Kunde inte spara score.');
+        return response.json();
+      })
+      .then(function () {
+        addLocalScore(score);
+        scoreInput.value = '';
+        showMessage('✓ Score sparad');
+        scoreInput.focus();
+      })
+      .catch(function () {
+        // Fallback for file:// or temporary API issues
+        addLocalScore(score);
+        scoreInput.value = '';
+        showMessage('✓ Score sparad lokalt');
+        scoreInput.focus();
+      })
+      .finally(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Spara score';
+      });
   });
 
   function addLocalScore(score) {
