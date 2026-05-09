@@ -177,17 +177,20 @@
       var viewportW = Math.max(window.innerWidth, 1);
       var viewportH = Math.max(window.innerHeight, 1);
 
-      // Canvas is rotated 90deg, so rendered bounds are swapped.
+      // Auto-rotate only on wide (landscape) viewports.
+      var shouldRotate = viewportW > viewportH;
+      canvas.style.setProperty('--blaze-rotate-deg', shouldRotate ? '90deg' : '0deg');
+
       var baseW = 1080;
       var baseH = 1920;
-      var rotatedW = baseH;
-      var rotatedH = baseW;
+      var rotatedW = shouldRotate ? baseH : baseW;
+      var rotatedH = shouldRotate ? baseW : baseH;
 
       var scaleByW = viewportW / rotatedW;
       var scaleByH = viewportH / rotatedH;
       var scale = Math.min(scaleByW, scaleByH);
-      // Keep safe margins on TVs (avoid edge clipping / overscan).
-      scale = scale * 0.78;
+      // Keep very small safe margin so content fills the TV better.
+      scale = scale * 0.985;
 
       if (!isFinite(scale) || scale <= 0) {
         scale = 1;
