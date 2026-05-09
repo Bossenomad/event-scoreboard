@@ -26,7 +26,7 @@
 
   // Polling fallback state
   var pollTimer = null;
-  var POLL_INTERVAL = 60000;
+  var POLL_INTERVAL = 2000;
 
   var manualState = window.MANUAL_TV_STATE || {
     prizePot: 0,
@@ -46,6 +46,7 @@
   setTimeout(applyFilePreviewScale, 250);
   startManualMode();
   if (location.protocol !== 'file:') {
+    connectWebSocket();
     startPolling();
   }
 
