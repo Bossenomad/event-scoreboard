@@ -14,79 +14,113 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;
+    }
+    .viewport {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 0;
     }
     .canvas {
-      width: min(100vw, 177.78vh);
-      aspect-ratio: 16 / 9;
+      width: min(100vh * 0.5625, 100vw);
+      height: min(100vw * 1.7778, 100vh);
+      aspect-ratio: 9 / 16;
       background: #A20020;
-      padding: 36px 56px 24px;
+      padding: 28px 18px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 14px;
+      transform: rotate(90deg);
+      transform-origin: center center;
     }
-    .title { text-transform: uppercase; letter-spacing: 3px; font-size: 1.6rem; font-weight: 800; text-align: center; }
-    .pot { text-align: center; font-size: 6.5rem; font-weight: 900; line-height: 1; }
-    .sub { text-align: center; text-transform: uppercase; letter-spacing: 2px; font-size: 1.25rem; font-weight: 800; }
-    .divider { height: 2px; background: rgba(255,255,255,.3); }
-    .table-title { text-transform: uppercase; letter-spacing: 3px; font-size: 2.1rem; font-weight: 900; text-align: center; }
+    .title { text-transform: uppercase; letter-spacing: 2px; font-size: 1.2rem; font-weight: 800; text-align: center; }
+    .pot { text-align: center; font-size: 4.8rem; font-weight: 900; line-height: 1; }
+    .sub { text-align: center; text-transform: uppercase; letter-spacing: 1px; font-size: 1rem; font-weight: 800; }
+    .divider { height: 2px; background: rgba(255,255,255,.3); margin-top: 4px; }
+    .table-title { text-transform: uppercase; letter-spacing: 2px; font-size: 1.8rem; font-weight: 900; text-align: center; }
     .head, .row {
       display: grid;
-      grid-template-columns: 120px 1.2fr 1.2fr 220px;
-      gap: 12px;
+      grid-template-columns: 52px minmax(0, 1.05fr) minmax(0, 1.45fr) 70px;
+      gap: 6px;
       align-items: center;
     }
-    .head { font-size: 1.4rem; font-weight: 800; text-transform: uppercase; opacity: .95; }
-    .rows { display: flex; flex-direction: column; gap: 10px; }
+    .head {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      opacity: .95;
+    }
+    .rows { display: flex; flex-direction: column; gap: 8px; }
     .row {
       background: #62001D;
       border: 1px solid rgba(255,255,255,.2);
       border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 1.35rem;
+      padding: 8px 7px;
+      font-size: 0.88rem;
       font-weight: 800;
     }
     .row.top { background: #ED0000; }
+    .row span,
+    .head span {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .head span:nth-child(2),
+    .head span:nth-child(3),
+    .head span:nth-child(4) {
+      letter-spacing: 0.5px;
+    }
+    .row span:nth-child(3) {
+      font-size: 0.82rem;
+    }
     .score { text-align: right; }
     .footer {
       margin-top: auto;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       gap: 16px;
       color: rgba(255,255,255,.9);
       font-weight: 700;
-      font-size: 1.05rem;
+      font-size: 0.85rem;
     }
     .logo {
-      height: 42px;
+      height: 44px;
       width: auto;
       object-fit: contain;
     }
   </style>
 </head>
 <body>
-  <main class="canvas">
-    <div class="title">Tillsammans har vi samlat in</div>
-    <div class="pot"><span id="pot">3 802</span> kr</div>
-    <div class="sub">till vinnarens favoritförening</div>
-    <div class="divider"></div>
-    <div class="table-title">Topplistan</div>
-    <div class="head">
-      <span></span><span>Namn</span><span>Favoritförening</span><span class="score">Poäng</span>
-    </div>
-    <div class="rows" id="rows">
-      <div class="row top"><span>#1</span><span>Peter O</span><span>RBK</span><span class="score">53</span></div>
-      <div class="row"><span>#2</span><span>Victor</span><span>RBK T14</span><span class="score">52</span></div>
-      <div class="row"><span>#3</span><span>William L</span><span>Varberg Vipers</span><span class="score">52</span></div>
-      <div class="row"><span>#4</span><span>Daniel L</span><span>Harryda HC</span><span class="score">49</span></div>
-      <div class="row"><span>#5</span><span>Fredrik</span><span>Djurgarden IF</span><span class="score">49</span></div>
-    </div>
-    <footer class="footer">
-      <span id="updated-at">Fast data</span>
-      <img class="logo" src="https://are-leaderboard.vercel.app/assests/ski-team-sweden-stolt-sponsor.png" alt="Ski Team Sweden">
-    </footer>
-  </main>
+  <div class="viewport">
+    <main class="canvas">
+      <div class="title">Tillsammans har vi samlat in</div>
+      <div class="pot"><span id="pot">3 802</span> kr</div>
+      <div class="sub">till vinnarens favoritförening</div>
+      <div class="divider"></div>
+      <div class="table-title">Topplistan</div>
+      <div class="head">
+        <span></span><span>Namn</span><span>Favoritförening</span><span class="score">Poäng</span>
+      </div>
+      <div class="rows" id="rows">
+        <div class="row top"><span>#1</span><span>Peter O</span><span>RBK</span><span class="score">53</span></div>
+        <div class="row"><span>#2</span><span>Victor</span><span>RBK T14</span><span class="score">52</span></div>
+        <div class="row"><span>#3</span><span>William L</span><span>Varberg Vipers</span><span class="score">52</span></div>
+        <div class="row"><span>#4</span><span>Daniel L</span><span>Harryda HC</span><span class="score">49</span></div>
+        <div class="row"><span>#5</span><span>Fredrik</span><span>Djurgarden IF</span><span class="score">49</span></div>
+      </div>
+      <footer class="footer">
+        <img class="logo" src="https://are-leaderboard.vercel.app/assests/ski-team-sweden-stolt-sponsor.png" alt="Ski Team Sweden">
+      </footer>
+    </main>
+  </div>
   <script src="/blaze/app.js?v=20260509-localfix1"></script>
 </body>
 </html>
