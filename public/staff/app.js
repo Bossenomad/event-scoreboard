@@ -9,8 +9,8 @@
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var score = parseInt(scoreInput.value, 10);
-    if (!Number.isInteger(score) || score <= 0) {
-      showMessage('Poäng måste vara ett positivt heltal.', true);
+    if (!Number.isInteger(score) || score <= 0 || score > 70) {
+      showMessage('Poäng måste vara ett heltal mellan 1 och 70.', true);
       return;
     }
 

@@ -56,7 +56,7 @@
     <p>Systemet sparar endast poäng och uppdaterar prispotten.</p>
     <form id="score-form">
       <label for="score">Poäng</label>
-      <input id="score" name="score" type="number" min="1" step="1" placeholder="Ange poäng" required>
+      <input id="score" name="score" type="number" min="1" max="70" step="1" placeholder="Ange poäng (1-70)" required>
       <button type="submit" id="submit-btn">Spara score</button>
       <div class="msg" id="message" aria-live="polite"></div>
     </form>

@@ -33,6 +33,7 @@
     leaderboard: [],
     latestResult: null
   };
+  var manualBasePrizePot = Number(manualState.prizePot) || 0;
 
   // --- Initialization ---
   applyFilePreviewScale();
@@ -44,6 +45,9 @@
   setTimeout(applyFilePreviewScale, 50);
   setTimeout(applyFilePreviewScale, 250);
   startManualMode();
+  if (location.protocol !== 'file:') {
+    startPolling();
+  }
 
   // --- WebSocket connection ---
 
@@ -137,7 +141,14 @@
         return response.json();
       })
       .then(function (data) {
-        handleStateUpdate(data);
+        var newPrizePot = currentPrizePot;
+        if (typeof data.prizePot === 'number') {
+          newPrizePot = manualBasePrizePot + data.prizePot;
+        }
+        if (newPrizePot !== currentPrizePot) {
+          animatePrizePot(currentPrizePot, newPrizePot);
+          currentPrizePot = newPrizePot;
+        }
       })
       .catch(function (err) {
         console.warn('TV Display: polling error', err);
