@@ -58,10 +58,9 @@
     var now = Date.now();
     var lastRun = readGrowthLastRun();
 
-    // First run bootstraps the timer without adding immediately.
+    // First run adds immediately once, then continues on interval.
     if (lastRun <= 0) {
-      writeGrowthLastRun(now);
-      return;
+      lastRun = now - GROWTH_INTERVAL_MS;
     }
 
     var elapsed = now - lastRun;
