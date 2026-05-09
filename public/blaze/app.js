@@ -7,6 +7,8 @@
   }
 
   var LOCAL_KEY = 'event_scoreboard_blaze_added_total';
+  var GROWTH_LAST_RUN_KEY = 'event_scoreboard_blaze_growth_last_run';
+  var GROWTH_INTERVAL_MS = 4 * 60 * 1000;
   var potEl = document.getElementById('pot');
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
@@ -22,8 +24,10 @@
   };
 
   renderStaticState();
+  applyPeriodicGrowth();
   syncLocalPrizePot();
   setInterval(syncLocalPrizePot, 1000);
+  setInterval(applyPeriodicGrowth, 5000);
   window.addEventListener('storage', syncLocalPrizePot);
 
   function renderStaticState() {
@@ -36,6 +40,20 @@
     var localAdded = loadLocalAdded();
     var total = Number(staticState.prizePotSek || 0) + localAdded;
     potEl.textContent = total.toLocaleString('sv-SE');
+  }
+
+  function applyPeriodicGrowth() {
+    var now = Date.now();
+    var lastRun = readGrowthLastRun();
+    if (lastRun > 0 && now - lastRun < GROWTH_INTERVAL_MS) {
+      return;
+    }
+
+    var add = randomInt(10, 55);
+    var current = loadLocalAdded();
+    var next = current + add;
+    writeLocalAdded(next);
+    writeGrowthLastRun(now);
   }
 
   function renderRows(items) {
@@ -79,6 +97,15 @@
     }
   }
 
+  function writeLocalAdded(value) {
+    try {
+      localStorage.setItem(LOCAL_KEY, String(value));
+    } catch (_err) {
+      // ignore storage write issues
+    }
+    document.cookie = LOCAL_KEY + '=' + encodeURIComponent(String(value)) + '; path=/; max-age=31536000; SameSite=Lax';
+  }
+
   function readCookieAdded() {
     var name = LOCAL_KEY + '=';
     var parts = document.cookie ? document.cookie.split(';') : [];
@@ -90,5 +117,40 @@
       }
     }
     return 0;
+  }
+
+  function readGrowthLastRun() {
+    try {
+      var value = parseInt(localStorage.getItem(GROWTH_LAST_RUN_KEY) || '0', 10);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    } catch (_err) {
+      return readGrowthLastRunCookie();
+    }
+  }
+
+  function writeGrowthLastRun(ts) {
+    try {
+      localStorage.setItem(GROWTH_LAST_RUN_KEY, String(ts));
+    } catch (_err) {
+      // ignore storage write issues
+    }
+    document.cookie = GROWTH_LAST_RUN_KEY + '=' + encodeURIComponent(String(ts)) + '; path=/; max-age=31536000; SameSite=Lax';
+  }
+
+  function readGrowthLastRunCookie() {
+    var name = GROWTH_LAST_RUN_KEY + '=';
+    var parts = document.cookie ? document.cookie.split(';') : [];
+    for (var i = 0; i < parts.length; i++) {
+      var part = parts[i].trim();
+      if (part.indexOf(name) === 0) {
+        var n = parseInt(decodeURIComponent(part.substring(name.length)), 10);
+        return Number.isFinite(n) && n > 0 ? n : 0;
+      }
+    }
+    return 0;
+  }
+
+  function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 })();

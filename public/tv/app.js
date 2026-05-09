@@ -38,6 +38,8 @@
   var manualBasePrizePot = Number(manualState.prizePot) || 0;
   var prizePotStorageKey = 'event_scoreboard_tv_prize_pot';
   var addedScoreStorageKey = 'event_scoreboard_tv_added_total';
+  var growthLastRunKey = 'event_scoreboard_tv_growth_last_run';
+  var GROWTH_INTERVAL_MS = 4 * 60 * 1000;
 
   // --- Initialization ---
   applyFilePreviewScale();
@@ -350,8 +352,10 @@
 
   function startLocalMode() {
     setConnectionStatus('connected');
+    applyPeriodicGrowth();
     syncLocalPrizePot();
     setInterval(syncLocalPrizePot, 1000);
+    setInterval(applyPeriodicGrowth, 5000);
     window.addEventListener('storage', syncLocalPrizePot);
   }
 
@@ -363,6 +367,20 @@
       currentPrizePot = target;
       savePrizePot(currentPrizePot);
     }
+  }
+
+  function applyPeriodicGrowth() {
+    var now = Date.now();
+    var lastRun = readGrowthLastRun();
+    if (lastRun > 0 && now - lastRun < GROWTH_INTERVAL_MS) {
+      return;
+    }
+
+    var add = randomInt(10, 55);
+    var current = loadAddedScore();
+    var next = current + add;
+    writeAddedScore(next);
+    writeGrowthLastRun(now);
   }
 
   function applyFilePreviewScale() {
@@ -417,6 +435,15 @@
     }
   }
 
+  function writeAddedScore(value) {
+    try {
+      localStorage.setItem(addedScoreStorageKey, String(value));
+    } catch (_err) {
+      // ignore storage write issues
+    }
+    document.cookie = addedScoreStorageKey + '=' + encodeURIComponent(String(value)) + '; path=/; max-age=31536000; SameSite=Lax';
+  }
+
   function readCookieAddedScore() {
     var name = addedScoreStorageKey + '=';
     var parts = document.cookie ? document.cookie.split(';') : [];
@@ -428,6 +455,41 @@
       }
     }
     return 0;
+  }
+
+  function readGrowthLastRun() {
+    try {
+      var value = parseInt(localStorage.getItem(growthLastRunKey) || '0', 10);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    } catch (_err) {
+      return readGrowthLastRunCookie();
+    }
+  }
+
+  function writeGrowthLastRun(ts) {
+    try {
+      localStorage.setItem(growthLastRunKey, String(ts));
+    } catch (_err) {
+      // ignore storage write issues
+    }
+    document.cookie = growthLastRunKey + '=' + encodeURIComponent(String(ts)) + '; path=/; max-age=31536000; SameSite=Lax';
+  }
+
+  function readGrowthLastRunCookie() {
+    var name = growthLastRunKey + '=';
+    var parts = document.cookie ? document.cookie.split(';') : [];
+    for (var i = 0; i < parts.length; i++) {
+      var part = parts[i].trim();
+      if (part.indexOf(name) === 0) {
+        var n = parseInt(decodeURIComponent(part.substring(name.length)), 10);
+        return Number.isFinite(n) && n > 0 ? n : 0;
+      }
+    }
+    return 0;
+  }
+
+  function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
 })();
