@@ -1,7 +1,7 @@
 window.MANUAL_TV_STATE = {
   prizePot: 7351,
   leaderboard: [
-    { playerId: 'p1', displayName: 'Sigge Svensson', favouriteClub: 'Karlskrona HC', score: 52 },
+    { playerId: 'p1', displayName: 'Sigge Svensson', favouriteClub: 'Karlskrona HC', score: 54 },
     { playerId: 'p2', displayName: 'Morris S', favouriteClub: 'Karlskrona HC', score: 47 },
     { playerId: 'p3', displayName: 'Samuel B', favouriteClub: 'IFK Tumba', score: 44 },
     { playerId: 'p4', displayName: 'Rasmus Pilebo', favouriteClub: 'Helsingborg HC', score: 42 },
