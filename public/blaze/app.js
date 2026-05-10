@@ -20,8 +20,8 @@
       { rank: 1, name: 'Peter O', favoriteClub: 'RBK', score: 53 },
       { rank: 2, name: 'Victor', favoriteClub: 'RBK T14', score: 52 },
       { rank: 3, name: 'William L', favoriteClub: 'Varberg Vipers', score: 52 },
-      { rank: 4, name: 'Alexander Hedström', favoriteClub: 'Jonstorp IF', score: 51 },
-      { rank: 5, name: 'Martin', favoriteClub: 'Borås HC', score: 50 }
+      { rank: 4, name: 'Pontus', favoriteClub: 'Rögle BK', score: 52 },
+      { rank: 5, name: 'Alexander Hedström', favoriteClub: 'Jonstorp IF', score: 51 }
     ]
   };
   var expectedBaseMarker = 'blaze-base-' + String(staticState.prizePotSek);
