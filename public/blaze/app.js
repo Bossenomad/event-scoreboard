@@ -210,11 +210,15 @@
 
       var baseW = 1080;
       var baseH = 1920;
-      // Blaze is fixed vertical layout.
-      canvas.style.setProperty('--blaze-rotate-deg', '0deg');
+      // Auto-rotate on landscape screens (TV/browser), keep vertical on portrait.
+      var shouldRotate = viewportW > viewportH;
+      canvas.style.setProperty('--blaze-rotate-deg', shouldRotate ? '90deg' : '0deg');
 
-      var scaleByW = viewportW / baseW;
-      var scaleByH = viewportH / baseH;
+      var rotatedW = shouldRotate ? baseH : baseW;
+      var rotatedH = shouldRotate ? baseW : baseH;
+
+      var scaleByW = viewportW / rotatedW;
+      var scaleByH = viewportH / rotatedH;
       var scale = Math.min(scaleByW, scaleByH);
       // Keep very small safe margin so content fills the TV better.
       scale = scale * 0.985;
