@@ -17,11 +17,11 @@
   var staticState = {
     prizePotSek: 8152,
     topPlayers: [
-      { rank: 1, name: 'Peter O', favoriteClub: 'RBK', score: 53 },
-      { rank: 2, name: 'Victor', favoriteClub: 'RBK T14', score: 52 },
-      { rank: 3, name: 'William L', favoriteClub: 'Varberg Vipers', score: 52 },
-      { rank: 4, name: 'Andreas', favoriteClub: 'Karlskrona HK', score: 56 },
-      { rank: 5, name: 'Alexander Hedström', favoriteClub: 'Jonstorp IF', score: 51 }
+      { rank: 1, name: 'Pontus', favoriteClub: 'Rögle BK', score: 56 },
+      { rank: 2, name: 'Andreas', favoriteClub: 'Karlskrona HK', score: 56 },
+      { rank: 3, name: 'Peter O', favoriteClub: 'RBK', score: 53 },
+      { rank: 4, name: 'Victor', favoriteClub: 'RBK T14', score: 52 },
+      { rank: 5, name: 'William L', favoriteClub: 'Varberg Vipers', score: 52 }
     ]
   };
   var expectedBaseMarker = 'blaze-base-' + String(staticState.prizePotSek);
