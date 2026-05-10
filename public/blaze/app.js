@@ -14,7 +14,7 @@
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
   var staticState = {
-    prizePotSek: 5376,
+    prizePotSek: 8152,
     topPlayers: [
       { rank: 1, name: 'Peter O', favoriteClub: 'RBK', score: 53 },
       { rank: 2, name: 'Victor', favoriteClub: 'RBK T14', score: 52 },
