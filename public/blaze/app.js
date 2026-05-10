@@ -15,7 +15,7 @@
   var rowsEl = document.getElementById('rows');
   var updatedAtEl = document.getElementById('updated-at');
   var staticState = {
-    prizePotSek: 8152,
+    prizePotSek: 11206,
     topPlayers: [
       { rank: 1, name: 'Pontus', favoriteClub: 'Rögle BK', score: 56 },
       { rank: 2, name: 'Andreas', favoriteClub: 'Karlskrona HK', score: 56 },
@@ -208,17 +208,13 @@
       var viewportW = Math.max(window.innerWidth, 1);
       var viewportH = Math.max(window.innerHeight, 1);
 
-      // Auto-rotate only on wide (landscape) viewports.
-      var shouldRotate = viewportW > viewportH;
-      canvas.style.setProperty('--blaze-rotate-deg', shouldRotate ? '90deg' : '0deg');
-
       var baseW = 1080;
       var baseH = 1920;
-      var rotatedW = shouldRotate ? baseH : baseW;
-      var rotatedH = shouldRotate ? baseW : baseH;
+      // Blaze is fixed vertical layout.
+      canvas.style.setProperty('--blaze-rotate-deg', '0deg');
 
-      var scaleByW = viewportW / rotatedW;
-      var scaleByH = viewportH / rotatedH;
+      var scaleByW = viewportW / baseW;
+      var scaleByH = viewportH / baseH;
       var scale = Math.min(scaleByW, scaleByH);
       // Keep very small safe margin so content fills the TV better.
       scale = scale * 0.985;
