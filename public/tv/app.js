@@ -39,7 +39,11 @@
   var prizePotStorageKey = 'event_scoreboard_tv_prize_pot';
   var addedScoreStorageKey = 'event_scoreboard_tv_added_total';
   var growthLastRunKey = 'event_scoreboard_tv_growth_last_run';
+  var baseMarkerKey = 'event_scoreboard_tv_base_marker';
   var GROWTH_INTERVAL_MS = 5 * 60 * 1000;
+  var expectedBaseMarker = 'tv-base-' + String(manualBasePrizePot);
+
+  enforceBaseReset();
 
   // --- Initialization ---
   if (location.protocol === 'file:') {
@@ -495,6 +499,23 @@
 
   function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function enforceBaseReset() {
+    try {
+      var currentMarker = localStorage.getItem(baseMarkerKey) || '';
+      if (currentMarker === expectedBaseMarker) return;
+
+      localStorage.setItem(prizePotStorageKey, String(manualBasePrizePot));
+      localStorage.setItem(addedScoreStorageKey, '0');
+      localStorage.setItem(growthLastRunKey, '0');
+      localStorage.setItem(baseMarkerKey, expectedBaseMarker);
+    } catch (_err) {
+      // ignore storage write failures
+    }
+
+    document.cookie = addedScoreStorageKey + '=0; path=/; max-age=31536000; SameSite=Lax';
+    document.cookie = growthLastRunKey + '=0; path=/; max-age=31536000; SameSite=Lax';
   }
 
 })();

@@ -8,6 +8,7 @@
 
   var LOCAL_KEY = 'event_scoreboard_blaze_added_total';
   var GROWTH_LAST_RUN_KEY = 'event_scoreboard_blaze_growth_last_run';
+  var BASE_MARKER_KEY = 'event_scoreboard_blaze_base_marker';
   var GROWTH_INTERVAL_MS = 3 * 60 * 1000;
   var fitTick = null;
   var potEl = document.getElementById('pot');
@@ -23,6 +24,9 @@
       { rank: 5, name: 'Martin', favoriteClub: 'Borås HC', score: 50 }
     ]
   };
+  var expectedBaseMarker = 'blaze-base-' + String(staticState.prizePotSek);
+
+  enforceBaseReset();
 
   applyFitScale();
   window.addEventListener('resize', applyFitScale);
@@ -173,6 +177,22 @@
 
   function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function enforceBaseReset() {
+    try {
+      var currentMarker = localStorage.getItem(BASE_MARKER_KEY) || '';
+      if (currentMarker === expectedBaseMarker) return;
+
+      localStorage.setItem(LOCAL_KEY, '0');
+      localStorage.setItem(GROWTH_LAST_RUN_KEY, '0');
+      localStorage.setItem(BASE_MARKER_KEY, expectedBaseMarker);
+    } catch (_err) {
+      // ignore storage write failures
+    }
+
+    document.cookie = LOCAL_KEY + '=0; path=/; max-age=31536000; SameSite=Lax';
+    document.cookie = GROWTH_LAST_RUN_KEY + '=0; path=/; max-age=31536000; SameSite=Lax';
   }
 
   function applyFitScale() {
